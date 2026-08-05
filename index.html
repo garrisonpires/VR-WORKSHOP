@@ -1,1110 +1,1807 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="LUMINA – An immersive VR space exploration experience. Travel through a living universe, discover alien civilizations, and experience realistic zero-gravity physics." />
-  <meta name="keywords" content="VR, space, exploration, A-Frame, WebVR, WebXR, LUMINA" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="LUMINA – Immersive VR Space Exploration. Explore a living universe or pilot a spacecraft through asteroid fields. WebXR experience supporting Meta Quest and desktop."/>
+  <meta name="keywords" content="VR, WebXR, space, exploration, A-Frame, LUMINA, Meta Quest, spacecraft"/>
+  <meta property="og:title" content="LUMINA – Immersive VR Space Exploration"/>
+  <meta property="og:description" content="Travel through a living universe. Discover alien civilizations. Pilot your spacecraft through asteroid fields."/>
   <title>LUMINA – Immersive VR Space Exploration</title>
-  <link rel="stylesheet" href="lumina.css" />
 
-  <!-- A-Frame 1.7.1 -->
+  <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-  <!-- A-Frame Extras (physics + movement) -->
-  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.4.0/dist/aframe-extras.min.js"></script>
-</head>
 
+  <style>
+/* ═══════════════════════════════════════════════════════════
+   LUMINA — GLOBAL STYLES
+═══════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Exo+2:wght@300;400;500;600&display=swap');
+
+:root {
+  --c-blue:   #00d4ff;
+  --c-cyan:   #00ffcc;
+  --c-purple: #8b5cf6;
+  --c-gold:   #fbbf24;
+  --c-red:    #ef4444;
+  --c-green:  #22c55e;
+  --bg-panel: rgba(0,12,40,0.82);
+  --border:   rgba(0,212,255,0.4);
+  --f-title:  'Orbitron', monospace;
+  --f-body:   'Exo 2', sans-serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:var(--f-body)}
+::-webkit-scrollbar{display:none}
+
+/* ─── SHARED PANEL UTILS ───────────────────────────────── */
+.gl-panel{
+  background:var(--bg-panel);
+  border:1px solid var(--border);
+  border-radius:8px;
+  backdrop-filter:blur(12px);
+  box-shadow:0 0 20px rgba(0,212,255,0.08);
+}
+.hud-corner{position:absolute;width:50px;height:50px;opacity:0.55}
+.hud-corner::before,.hud-corner::after{content:'';position:absolute;background:var(--c-blue);box-shadow:0 0 6px var(--c-blue)}
+.hud-corner::before{width:100%;height:2px}.hud-corner::after{width:2px;height:100%}
+.hud-corner.tl{top:14px;left:14px}.hud-corner.tr{top:14px;right:14px;transform:scaleX(-1)}
+.hud-corner.bl{bottom:14px;left:14px;transform:scaleY(-1)}.hud-corner.br{bottom:14px;right:14px;transform:scale(-1)}
+
+/* ═══════════════════════════════════════════════════════════
+   LANDING / MODE SELECT SCREEN
+═══════════════════════════════════════════════════════════ */
+#landing{
+  position:fixed;inset:0;z-index:9000;
+  background:radial-gradient(ellipse at 30% 40%,#001040 0%,#000820 50%,#000 100%);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  transition:opacity 1.2s ease,visibility 1.2s ease;
+}
+#landing.gone{opacity:0;visibility:hidden;pointer-events:none}
+
+#landing-stars{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.l-star{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;animation:ltwinkle var(--d,3s) ease infinite}
+@keyframes ltwinkle{0%,100%{opacity:.15}50%{opacity:.9}}
+
+.land-logo{
+  font-family:var(--f-title);font-size:clamp(3rem,9vw,7.5rem);font-weight:900;
+  letter-spacing:.3em;color:transparent;
+  background:linear-gradient(135deg,#00d4ff,#00ffcc,#8b5cf6,#00d4ff);
+  background-size:300% 300%;
+  -webkit-background-clip:text;background-clip:text;
+  animation:logoShimmer 3s ease infinite,logoIn 1.5s ease forwards;
+  text-shadow:none;position:relative;z-index:1;
+}
+@keyframes logoShimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes logoIn{from{opacity:0;transform:scale(.85) translateY(20px);letter-spacing:.6em}to{opacity:1;transform:scale(1) translateY(0);letter-spacing:.3em}}
+
+.land-sub{
+  font-family:var(--f-body);font-size:clamp(.7rem,2vw,1rem);font-weight:300;
+  letter-spacing:.5em;color:rgba(200,240,255,.55);margin-top:.6rem;
+  text-transform:uppercase;animation:fadeUp 1.5s ease .5s both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+.land-divider{
+  width:clamp(120px,25vw,260px);height:1px;margin:2.5rem auto;
+  background:linear-gradient(90deg,transparent,rgba(0,212,255,.5),transparent);
+  animation:fadeUp 1.5s ease .7s both;
+}
+
+.land-tagline{
+  font-size:clamp(.7rem,1.5vw,.9rem);color:rgba(200,240,255,.4);
+  letter-spacing:.25em;text-align:center;margin-bottom:3rem;
+  animation:fadeUp 1.5s ease .9s both;
+}
+
+.mode-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;
+  animation:fadeUp 1.5s ease 1.1s both;
+  width:min(700px,90vw);
+}
+
+.mode-card{
+  background:rgba(0,10,35,.7);
+  border:1px solid rgba(0,212,255,.2);
+  border-radius:16px;padding:2rem 1.5rem;
+  cursor:pointer;text-align:center;
+  transition:all .35s ease;
+  position:relative;overflow:hidden;
+}
+.mode-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(0,212,255,.05),transparent 60%);
+  opacity:0;transition:opacity .35s ease;
+}
+.mode-card:hover{
+  border-color:rgba(0,212,255,.6);
+  box-shadow:0 0 40px rgba(0,212,255,.15),0 0 80px rgba(0,212,255,.06);
+  transform:translateY(-4px);
+}
+.mode-card:hover::before{opacity:1}
+.mode-card.flight:hover{
+  border-color:rgba(139,92,246,.6);
+  box-shadow:0 0 40px rgba(139,92,246,.15),0 0 80px rgba(139,92,246,.06);
+}
+.mode-card.flight::before{background:linear-gradient(135deg,rgba(139,92,246,.05),transparent 60%)}
+
+.mc-icon{font-size:3rem;margin-bottom:1rem;display:block}
+.mc-title{
+  font-family:var(--f-title);font-size:clamp(.75rem,2vw,1rem);
+  font-weight:700;letter-spacing:.25em;color:var(--c-cyan);
+  text-shadow:0 0 12px var(--c-cyan);margin-bottom:.6rem;
+}
+.mode-card.flight .mc-title{color:#c4b5fd;text-shadow:0 0 12px #8b5cf6}
+.mc-desc{font-size:clamp(.65rem,1.5vw,.8rem);color:rgba(200,240,255,.5);line-height:1.6}
+.mc-badge{
+  display:inline-block;margin-top:.9rem;
+  padding:.25rem .8rem;border-radius:50px;font-family:var(--f-title);font-size:.5rem;
+  letter-spacing:.2em;border:1px solid;
+}
+.mc-badge.explore{color:var(--c-cyan);border-color:rgba(0,255,204,.35)}
+.mc-badge.flight{color:#c4b5fd;border-color:rgba(139,92,246,.35)}
+
+.land-vr-note{
+  margin-top:2rem;font-size:.65rem;color:rgba(200,240,255,.3);
+  letter-spacing:.15em;animation:fadeUp 1.5s ease 1.3s both;text-align:center;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOADING TRANSITION
+═══════════════════════════════════════════════════════════ */
+#loader{
+  position:fixed;inset:0;z-index:8500;
+  background:#000;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .4s ease,visibility .4s ease;
+}
+#loader.show{opacity:1;visibility:visible;pointer-events:all}
+#loader.fade-out{opacity:0}
+.load-word{
+  font-family:var(--f-title);font-size:clamp(2rem,6vw,5rem);
+  font-weight:900;letter-spacing:.4em;color:transparent;
+  background:linear-gradient(135deg,var(--c-blue),var(--c-cyan));
+  -webkit-background-clip:text;background-clip:text;
+}
+.load-bar-wrap{width:clamp(180px,30vw,320px);margin-top:2rem}
+.load-bar-track{height:3px;background:rgba(0,212,255,.12);border-radius:3px;overflow:hidden}
+.load-bar-fill{height:100%;background:linear-gradient(90deg,var(--c-blue),var(--c-cyan));border-radius:3px;box-shadow:0 0 12px var(--c-cyan);animation:loadFill 2.5s ease forwards}
+@keyframes loadFill{0%{width:0%}100%{width:100%}}
+.load-status{margin-top:.75rem;font-family:var(--f-title);font-size:.65rem;color:var(--c-cyan);letter-spacing:.2em;text-align:center}
+
+/* ═══════════════════════════════════════════════════════════
+   MODE SWITCHER (in-game)
+═══════════════════════════════════════════════════════════ */
+#mode-btn{
+  position:fixed;top:14px;right:14px;z-index:500;
+  background:rgba(0,8,28,.88);border:1px solid rgba(0,212,255,.35);
+  border-radius:8px;padding:.4rem .9rem;cursor:pointer;
+  font-family:var(--f-title);font-size:.55rem;letter-spacing:.2em;
+  color:var(--c-cyan);backdrop-filter:blur(10px);
+  transition:all .3s ease;pointer-events:all;
+}
+#mode-btn:hover{border-color:var(--c-cyan);box-shadow:0 0 20px rgba(0,212,255,.15)}
+
+/* ═══════════════════════════════════════════════════════════
+   EXPLORE HUD
+═══════════════════════════════════════════════════════════ */
+#exp-hud{
+  position:fixed;inset:0;pointer-events:none;z-index:100;
+  transition:opacity .5s ease;
+}
+#exp-hud.hide{opacity:0}
+
+#exp-top{
+  position:absolute;top:15px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:2rem;
+  padding:.4rem 2rem;border-radius:50px;
+  background:var(--bg-panel);border:1px solid var(--border);
+  backdrop-filter:blur(10px);box-shadow:0 0 30px rgba(0,212,255,.12);
+}
+.exp-title{font-family:var(--f-title);font-size:.75rem;font-weight:700;letter-spacing:.4em;color:var(--c-cyan);text-shadow:0 0 15px var(--c-cyan)}
+.exp-clock{font-family:var(--f-title);font-size:.7rem;color:rgba(200,240,255,.5);letter-spacing:.15em}
+
+#exp-left{position:absolute;left:18px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:.5rem;width:185px}
+
+.ep{padding:.75rem 1rem}.ep .pl{font-family:var(--f-title);font-size:.5rem;letter-spacing:.25em;color:var(--c-blue);margin-bottom:.35rem}
+.mr{display:flex;align-items:center;gap:.5rem;margin-bottom:.28rem}
+.mi{font-size:.8rem;width:16px;text-align:center;flex-shrink:0}
+.ml{font-size:.6rem;color:rgba(200,240,255,.55);width:36px;flex-shrink:0}
+.mb{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden}
+.mf{height:100%;border-radius:4px;transition:width .5s ease}
+.mf.fuel{background:linear-gradient(90deg,var(--c-blue),var(--c-cyan));box-shadow:0 0 6px var(--c-cyan)}
+.mf.oxy{background:linear-gradient(90deg,var(--c-green),#86efac);box-shadow:0 0 6px var(--c-green)}
+.mf.hull{background:linear-gradient(90deg,var(--c-purple),#c4b5fd);box-shadow:0 0 6px var(--c-purple)}
+.mf.shld{background:linear-gradient(90deg,var(--c-gold),#fde68a);box-shadow:0 0 6px var(--c-gold)}
+.mv{font-family:var(--f-title);font-size:.6rem;color:var(--c-cyan);width:28px;text-align:right}
+.ni{display:flex;justify-content:space-between;padding:.18rem 0;border-bottom:1px solid rgba(0,212,255,.08)}
+.ni:last-child{border-bottom:none}
+.nk{font-size:.6rem;color:rgba(200,240,255,.5)}.nv{font-family:var(--f-title);font-size:.6rem;color:var(--c-cyan)}
+.xp-bar{height:3px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin-top:.3rem}
+.xp-f{height:100%;background:linear-gradient(90deg,var(--c-purple),#c4b5fd);box-shadow:0 0 8px var(--c-purple);border-radius:3px;transition:width 1s ease}
+.xp-l{font-family:var(--f-title);font-size:.5rem;color:var(--c-purple);letter-spacing:.15em;margin-top:.2rem;text-align:right}
+
+#exp-right{position:absolute;right:18px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:.5rem;width:190px}
+.miss-t{font-family:var(--f-title);font-size:.55rem;letter-spacing:.25em;color:var(--c-gold);text-shadow:0 0 10px var(--c-gold);margin-bottom:.5rem}
+.miss-n{font-size:.75rem;font-weight:600;color:#e0f7ff;margin-bottom:.28rem}
+.miss-d{font-size:.65rem;color:rgba(200,240,255,.5);line-height:1.4}
+.miss-pb{margin-top:.5rem;height:3px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+.miss-pf{height:100%;background:linear-gradient(90deg,var(--c-gold),#fde68a);box-shadow:0 0 8px var(--c-gold);border-radius:3px;width:35%;transition:width 1s ease}
+.kh{display:flex;align-items:center;gap:.4rem;margin-bottom:.2rem}
+.ky{background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.35);border-radius:3px;padding:1px 5px;font-family:var(--f-title);font-size:.5rem;color:var(--c-cyan);min-width:22px;text-align:center}
+.kl{font-size:.6rem;color:rgba(200,240,255,.5)}
+
+#exp-bottom{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:1.5rem}
+.vel-d{padding:.5rem 1.2rem;text-align:center}.vel-v{font-family:var(--f-title);font-size:1.2rem;color:var(--c-cyan);text-shadow:0 0 20px var(--c-cyan);display:block}.vel-u{font-size:.55rem;color:rgba(200,240,255,.45);letter-spacing:.2em}
+.comp{width:70px;height:70px;display:flex;align-items:center;justify-content:center;position:relative;border-radius:50%}
+.comp-ring{width:58px;height:58px;border:1px solid rgba(0,212,255,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;animation:cSpin 20s linear infinite}
+@keyframes cSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.comp-needle{position:absolute;width:2px;height:20px;background:linear-gradient(to top,transparent,var(--c-red));left:50%;transform:translateX(-50%);top:8px;border-radius:1px}
+.radar-d{width:80px;height:80px;position:relative;overflow:hidden;border-radius:8px}
+.radar-sweep{position:absolute;inset:0;background:conic-gradient(from 0deg,transparent 270deg,rgba(0,255,204,.28) 360deg);animation:rSweep 3s linear infinite;border-radius:6px}
+@keyframes rSweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.radar-rings::before,.radar-rings::after{content:'';position:absolute;border:1px solid rgba(0,212,255,.13);border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%)}
+.radar-rings::before{width:50%;height:50%}.radar-rings::after{width:85%;height:85%}
+.rdot{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--c-cyan);box-shadow:0 0 6px var(--c-cyan)}
+
+#nova-panel{position:absolute;bottom:110px;left:50%;transform:translateX(-50%);background:rgba(0,8,40,.9);border:1px solid rgba(139,92,246,.5);border-radius:12px;padding:.75rem 1.5rem;max-width:500px;min-width:300px;backdrop-filter:blur(15px);box-shadow:0 0 40px rgba(139,92,246,.2);display:flex;align-items:center;gap:1rem;transition:opacity .5s ease,transform .5s ease}
+#nova-panel.hidden{opacity:0;transform:translateX(-50%) translateY(10px)}
+.norb{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#c4b5fd,#7c3aed,#1e0050);box-shadow:0 0 20px rgba(139,92,246,.8);flex-shrink:0;animation:nPulse 2s ease infinite;position:relative}
+.norb::after{content:'';position:absolute;inset:3px;border-radius:50%;border:1px solid rgba(196,181,253,.5);animation:nRing 2s ease infinite}
+@keyframes nPulse{0%,100%{box-shadow:0 0 20px rgba(139,92,246,.8);transform:scale(1)}50%{box-shadow:0 0 30px rgba(139,92,246,1);transform:scale(1.05)}}
+@keyframes nRing{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.3);opacity:0}}
+.n-lbl{font-family:var(--f-title);font-size:.5rem;letter-spacing:.3em;color:var(--c-purple);margin-bottom:.2rem}
+.n-txt{font-size:.8rem;color:#e0f7ff;line-height:1.4;font-style:italic}
+
+#planet-scanner{position:absolute;top:80px;right:210px;width:240px;background:rgba(0,4,28,.9);border:1px solid rgba(0,255,204,.4);border-radius:12px;padding:1rem;backdrop-filter:blur(15px);box-shadow:0 0 40px rgba(0,255,204,.13);transition:opacity .6s ease,transform .6s ease}
+#planet-scanner.hidden{opacity:0;transform:translateX(20px)}
+.sc-hdr{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid rgba(0,255,204,.18)}
+.sc-pname{font-family:var(--f-title);font-size:.9rem;font-weight:700;color:var(--c-cyan);text-shadow:0 0 15px var(--c-cyan)}
+.sc-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.32rem}
+.sc-key{font-size:.6rem;color:rgba(200,240,255,.5);text-transform:uppercase;letter-spacing:.1em}
+.sc-val{font-family:var(--f-title);font-size:.65rem;color:#e0f7ff;text-align:right;max-width:58%}
+.sc-fact{margin-top:.75rem;padding-top:.5rem;border-top:1px solid rgba(0,255,204,.18);font-size:.65rem;color:var(--c-gold);line-height:1.5;font-style:italic}
+.sc-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--c-cyan),transparent);opacity:.55;animation:scLine 2s linear infinite;border-radius:12px}
+@keyframes scLine{from{top:0}to{top:100%}}
+
+#notif-c{position:absolute;top:68px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.4rem;min-width:300px}
+.notif{background:rgba(0,16,55,.9);border-radius:8px;padding:.5rem 1.2rem;font-size:.75rem;color:#e0f7ff;border-left:3px solid var(--c-cyan);backdrop-filter:blur(10px);animation:nIn .4s ease,nOut .5s ease 3.5s forwards;width:100%;text-align:center}
+.notif.warn{border-left-color:var(--c-gold);color:var(--c-gold)}
+.notif.danger{border-left-color:var(--c-red);color:var(--c-red)}
+.notif.ok{border-left-color:var(--c-green);color:var(--c-green)}
+@keyframes nIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes nOut{from{opacity:1}to{opacity:0}}
+
+.xhair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:20px}
+.xhair::before,.xhair::after{content:'';position:absolute;background:rgba(0,255,204,.6)}
+.xhair::before{width:100%;height:1px;top:50%;left:0}.xhair::after{width:1px;height:100%;top:0;left:50%}
+.xhair-ring{position:absolute;inset:-5px;border:1px solid rgba(0,255,204,.28);border-radius:50%}
+
+#galaxy-trans{position:fixed;inset:0;pointer-events:none;z-index:450;opacity:0;transition:opacity .5s ease}
+#galaxy-trans.active{opacity:1;animation:wormAnim 2.2s ease}
+@keyframes wormAnim{0%{opacity:0;filter:brightness(0)}30%{opacity:1;filter:brightness(3) hue-rotate(60deg)}60%{opacity:1;filter:brightness(2) hue-rotate(180deg)}100%{opacity:0;filter:brightness(1)}}
+#bh-warn{position:fixed;inset:0;pointer-events:none;z-index:400;opacity:0;transition:opacity .5s ease}
+#bh-warn.active{opacity:1;animation:bhPulse .5s ease infinite alternate}
+@keyframes bhPulse{from{box-shadow:inset 0 0 50px rgba(239,68,68,.3)}to{box-shadow:inset 0 0 100px rgba(239,68,68,.6)}}
+
+/* Upgrade menu */
+#upgrade-menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7);backdrop-filter:blur(5px);z-index:300;transition:opacity .4s ease;pointer-events:all}
+#upgrade-menu.hidden{opacity:0;pointer-events:none}
+.upg-con{background:rgba(0,6,28,.96);border:1px solid rgba(0,212,255,.4);border-radius:20px;padding:2rem;max-width:650px;width:90%;box-shadow:0 0 80px rgba(0,212,255,.18)}
+.upg-h h2{font-family:var(--f-title);font-size:1.3rem;color:var(--c-cyan);letter-spacing:.3em;text-shadow:0 0 20px var(--c-cyan);text-align:center}
+.upg-h p{font-size:.75rem;color:rgba(200,240,255,.45);text-align:center;margin-top:.3rem}
+.res-row{display:flex;justify-content:center;gap:2rem;padding:.75rem;background:rgba(0,212,255,.04);border-radius:8px;border:1px solid rgba(0,212,255,.12);margin:1rem 0}
+.ri{text-align:center}.ri-a{font-family:var(--f-title);font-size:1rem;color:var(--c-gold)}.ri-l{font-size:.55rem;color:rgba(200,240,255,.45);letter-spacing:.15em}
+.upg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.7rem;margin-bottom:1.2rem}
+.upg-card{background:rgba(0,16,50,.6);border:1px solid rgba(0,212,255,.18);border-radius:10px;padding:.9rem;cursor:pointer;transition:all .3s ease;text-align:center;pointer-events:all}
+.upg-card:hover{border-color:var(--c-cyan);background:rgba(0,212,255,.07);transform:translateY(-2px)}
+.u-ic{font-size:1.4rem;margin-bottom:.35rem}
+.u-nm{font-family:var(--f-title);font-size:.55rem;color:var(--c-cyan);letter-spacing:.15em;margin-bottom:.35rem}
+.u-pips{display:flex;gap:3px;justify-content:center}
+.upip{width:14px;height:4px;border-radius:2px;background:rgba(255,255,255,.1)}
+.upip.on{background:var(--c-cyan);box-shadow:0 0 6px var(--c-cyan)}
+.u-cost{font-size:.6rem;color:var(--c-gold);margin-top:.28rem}
+.upg-close{display:block;width:100%;padding:.6rem;background:rgba(0,212,255,.09);border:1px solid var(--c-blue);border-radius:8px;color:var(--c-cyan);font-family:var(--f-title);font-size:.65rem;letter-spacing:.2em;cursor:pointer;transition:all .3s ease;pointer-events:all}
+.upg-close:hover{background:rgba(0,212,255,.18)}
+
+/* ═══════════════════════════════════════════════════════════
+   FLIGHT HUD
+═══════════════════════════════════════════════════════════ */
+#flt-hud{
+  position:fixed;inset:0;pointer-events:none;z-index:100;
+  transition:opacity .5s ease;
+}
+#flt-hud.hide{opacity:0}
+
+#flt-top{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:24px;padding:6px 28px;border-radius:50px;background:rgba(0,8,28,.85);border:1px solid rgba(0,212,255,.35);backdrop-filter:blur(12px);box-shadow:0 0 30px rgba(0,212,255,.1)}
+.flt-title{font-family:var(--f-title);font-size:11px;font-weight:700;letter-spacing:5px;color:var(--c-cyan);text-shadow:0 0 12px var(--c-cyan)}
+
+#adi-wrap{position:absolute;top:66px;left:50%;transform:translateX(-50%);width:110px;height:110px;background:rgba(0,8,28,.85);border:1px solid rgba(0,212,255,.4);border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;backdrop-filter:blur(12px);box-shadow:0 0 20px rgba(0,212,255,.14)}
+#adi-inner{width:100%;height:100%;border-radius:50%;position:relative;transition:transform .1s ease;overflow:hidden}
+#adi-sky{position:absolute;width:100%;height:50%;top:0;background:linear-gradient(180deg,#001840,#003366)}
+#adi-gnd{position:absolute;width:100%;height:50%;bottom:0;background:linear-gradient(180deg,#2a1800,#1a0d00)}
+#adi-hor{position:absolute;width:100%;height:2px;top:50%;margin-top:-1px;background:rgba(255,220,100,.9);box-shadow:0 0 6px #ffcc44}
+#adi-ctr{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:2px;background:var(--c-cyan);box-shadow:0 0 8px var(--c-cyan)}
+#adi-ctr::before,#adi-ctr::after{content:'';position:absolute;width:2px;height:8px;background:var(--c-cyan);top:-3px}
+#adi-ctr::before{left:0}#adi-ctr::after{right:0}
+#adi-lbl{position:absolute;bottom:-23px;left:50%;transform:translateX(-50%);font-family:var(--f-title);font-size:8px;color:rgba(0,212,255,.55);letter-spacing:2px;white-space:nowrap}
+
+#spd-tape{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:70px;background:rgba(0,8,28,.82);border:1px solid rgba(0,212,255,.4);border-radius:8px;padding:10px 6px;backdrop-filter:blur(10px);text-align:center}
+#thr-tape{position:absolute;right:18px;top:50%;transform:translateY(-50%);width:70px;background:rgba(0,8,28,.82);border:1px solid rgba(0,212,255,.4);border-radius:8px;padding:10px 6px;backdrop-filter:blur(10px);text-align:center}
+.tp-lbl{font-family:var(--f-title);font-size:9px;letter-spacing:2px;color:var(--c-blue);margin-bottom:4px}
+.tp-val{font-family:var(--f-title);font-size:22px;font-weight:700;color:var(--c-cyan);text-shadow:0 0 15px var(--c-cyan);line-height:1}
+.tp-unit{font-size:9px;color:rgba(200,240,255,.45);letter-spacing:1px}
+
+#flt-stat{position:absolute;bottom:18px;left:18px;background:rgba(0,8,28,.82);border:1px solid rgba(0,212,255,.35);border-radius:8px;padding:10px 14px;backdrop-filter:blur(12px);min-width:160px}
+.fs-lbl{font-family:var(--f-title);font-size:8px;color:var(--c-blue);letter-spacing:2px;margin-bottom:6px}
+.br{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.bi{font-size:11px;width:14px}.bn{font-size:9px;color:rgba(200,240,255,.5);width:36px}
+.bt{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+.bf{height:100%;border-radius:3px;transition:width .4s ease}
+.bf.f{background:linear-gradient(90deg,var(--c-blue),var(--c-cyan));box-shadow:0 0 6px var(--c-cyan)}
+.bf.h{background:linear-gradient(90deg,var(--c-purple),#c4b5fd);box-shadow:0 0 6px var(--c-purple)}
+.bf.s{background:linear-gradient(90deg,var(--c-gold),#fde68a);box-shadow:0 0 6px var(--c-gold)}
+.bp{font-family:var(--f-title);font-size:9px;color:var(--c-cyan);width:26px;text-align:right}
+
+#thr-hud{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px}
+#thr-track{width:120px;height:8px;background:rgba(255,255,255,.08);border:1px solid rgba(0,212,255,.3);border-radius:6px;overflow:hidden}
+#thr-fill{height:100%;background:linear-gradient(90deg,#003366,var(--c-blue),var(--c-cyan));border-radius:6px;transition:width .15s ease;box-shadow:0 0 10px var(--c-cyan)}
+#thr-lbl{font-family:var(--f-title);font-size:8px;color:var(--c-blue);letter-spacing:2px}
+#thr-pct{font-family:var(--f-title);font-size:9px;color:var(--c-cyan)}
+
+#flt-br{position:absolute;bottom:18px;right:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.ast-box{background:rgba(0,8,28,.82);border:1px solid rgba(239,68,68,.4);border-radius:8px;padding:8px 14px;backdrop-filter:blur(12px);text-align:right}
+.ab-lbl{font-family:var(--f-title);font-size:8px;color:var(--c-red);letter-spacing:2px}
+.ab-val{font-family:var(--f-title);font-size:20px;font-weight:700;color:#ff8866;text-shadow:0 0 12px var(--c-red)}
+.score-box{background:rgba(0,8,28,.82);border:1px solid rgba(251,191,36,.4);border-radius:8px;padding:8px 14px;backdrop-filter:blur(12px);text-align:right}
+.sb-lbl{font-family:var(--f-title);font-size:8px;color:var(--c-gold);letter-spacing:2px}
+.sb-val{font-family:var(--f-title);font-size:20px;font-weight:700;color:#fde68a;text-shadow:0 0 12px var(--c-gold)}
+
+#flt-ctrl{position:absolute;top:70px;right:18px;background:rgba(0,8,28,.8);border:1px solid rgba(0,212,255,.22);border-radius:8px;padding:8px 12px;backdrop-filter:blur(10px);opacity:.8}
+.ct{font-family:var(--f-title);font-size:8px;color:var(--c-blue);letter-spacing:2px;margin-bottom:5px}
+.cr{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.ck{background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.35);border-radius:3px;padding:1px 5px;font-family:var(--f-title);font-size:8px;color:var(--c-cyan);min-width:22px;text-align:center}
+.cl{font-size:9px;color:rgba(200,240,255,.45)}
+
+#nova-msg{position:absolute;bottom:110px;left:50%;transform:translateX(-50%);background:rgba(0,6,28,.92);border:1px solid rgba(139,92,246,.5);border-radius:10px;padding:8px 18px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(14px);box-shadow:0 0 30px rgba(139,92,246,.2);transition:opacity .4s ease;min-width:240px}
+#nova-msg.hide{opacity:0;pointer-events:none}
+.n2orb{width:32px;height:32px;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 35% 35%,#c4b5fd,#7c3aed,#1e0050);box-shadow:0 0 16px rgba(139,92,246,.9);animation:nPulse 2s ease infinite}
+.n2txt{font-size:11px;color:#e0f7ff;font-style:italic;line-height:1.4}
+
+/* Full-screen effects */
+#danger-flash{position:fixed;inset:0;pointer-events:none;z-index:600;background:radial-gradient(ellipse,transparent 40%,rgba(239,68,68,.35) 100%);opacity:0;transition:opacity .08s ease}
+#danger-flash.on{opacity:1}
+#boost-flash{position:fixed;inset:0;pointer-events:none;z-index:550;background:radial-gradient(ellipse at center,rgba(0,255,204,.08) 0%,transparent 70%);opacity:0;transition:opacity .3s ease}
+#boost-flash.on{opacity:1}
+#thr-glow{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:300px;height:80px;pointer-events:none;z-index:5;background:radial-gradient(ellipse at bottom,rgba(0,212,255,.18) 0%,transparent 70%);transition:opacity .2s ease}
+  </style>
+</head>
 <body>
 
-  <!-- ╔══════════════════════════════════════════════════════════╗
-       ║              LOADING SCREEN                            ║
-       ╚══════════════════════════════════════════════════════════╝ -->
-  <div id="loading-screen">
-    <div class="loading-stars" id="loading-stars-container"></div>
-    <div class="loading-logo">LUMINA</div>
-    <div class="loading-subtitle">Immersive VR Space Exploration</div>
-    <div class="loading-bar-wrapper">
-      <div class="loading-bar-track">
-        <div class="loading-bar-fill"></div>
-      </div>
-      <div class="loading-status" id="loading-status">INITIALIZING NAVIGATION CORE...</div>
+<!-- ╔══════════════════════════════════════════════════════
+     LANDING / MODE SELECT
+╚══════════════════════════════════════════════════════ -->
+<div id="landing">
+  <div id="landing-stars"></div>
+
+  <div class="land-logo">LUMINA</div>
+  <div class="land-sub">Immersive VR Space Exploration</div>
+  <div class="land-divider"></div>
+  <div class="land-tagline">Choose your experience, Commander</div>
+
+  <div class="mode-grid">
+    <!-- Explore mode -->
+    <div class="mode-card explore" onclick="launchMode('explore')">
+      <span class="mc-icon">🌌</span>
+      <div class="mc-title">FREE EXPLORE</div>
+      <div class="mc-desc">Travel through the living solar system. Discover alien civilizations, scan planets, collect resources, and unravel the mysteries of deep space.</div>
+      <div class="mc-badge explore">◈ OPEN WORLD · EDUCATIONAL</div>
+    </div>
+    <!-- Flight mode -->
+    <div class="mode-card flight" onclick="launchMode('flight')">
+      <span class="mc-icon">🚀</span>
+      <div class="mc-title">FLIGHT COCKPIT</div>
+      <div class="mc-desc">Pilot the LUMINA Explorer through an endless asteroid field. Feel the yoke respond to every maneuver as you race through space debris.</div>
+      <div class="mc-badge flight">◈ ACTION · IMMERSIVE COCKPIT</div>
     </div>
   </div>
 
-  <!-- ╔══════════════════════════════════════════════════════════╗
-       ║              HUD OVERLAY                               ║
-       ╚══════════════════════════════════════════════════════════╝ -->
-  <div id="hud-overlay">
+  <div class="land-vr-note">◈ WebXR ready — Meta Quest 3S · Keyboard + Mouse · Desktop Browser ◈</div>
+</div>
 
-    <!-- Corner brackets -->
-    <div class="hud-corner tl"></div>
-    <div class="hud-corner tr"></div>
-    <div class="hud-corner bl"></div>
-    <div class="hud-corner br"></div>
+<!-- ╔══════════════════════════════════════════════════════
+     LOADING TRANSITION
+╚══════════════════════════════════════════════════════ -->
+<div id="loader">
+  <div class="load-word" id="load-word">LUMINA</div>
+  <div class="load-bar-wrap">
+    <div class="load-bar-track"><div class="load-bar-fill" id="load-fill"></div></div>
+    <div class="load-status" id="load-status">INITIALIZING...</div>
+  </div>
+</div>
 
-    <!-- TOP BAR -->
-    <div id="hud-top">
-      <div class="hud-title">◈ LUMINA EXPLORER ◈</div>
-      <div class="hud-clock" id="hud-clock">00:00:00 UTC</div>
+<!-- ╔══════════════════════════════════════════════════════
+     EXPLORE HUD (shown in explore mode)
+╚══════════════════════════════════════════════════════ -->
+<div id="exp-hud" class="hide">
+  <div class="hud-corner tl"></div><div class="hud-corner tr"></div>
+  <div class="hud-corner bl"></div><div class="hud-corner br"></div>
+
+  <div id="exp-top" class="gl-panel">
+    <div class="exp-title">◈ LUMINA EXPLORER ◈</div>
+    <div class="exp-clock" id="exp-clock">00:00:00</div>
+  </div>
+
+  <div id="exp-left">
+    <!-- Ship Status -->
+    <div class="ep gl-panel">
+      <div class="pl">◈ SHIP STATUS</div>
+      <div class="mr"><span class="mi">⛽</span><span class="ml">FUEL</span><div class="mb"><div class="mf fuel" id="e-fuel" style="width:100%"></div></div><span class="mv" id="e-fv">100%</span></div>
+      <div class="mr"><span class="mi">💨</span><span class="ml">O₂</span><div class="mb"><div class="mf oxy" id="e-oxy" style="width:100%"></div></div><span class="mv" id="e-ov">100%</span></div>
+      <div class="mr"><span class="mi">🛡</span><span class="ml">HULL</span><div class="mb"><div class="mf hull" id="e-hull" style="width:100%"></div></div><span class="mv" id="e-hv">100%</span></div>
+      <div class="mr"><span class="mi">⚡</span><span class="ml">SHLD</span><div class="mb"><div class="mf shld" id="e-shld" style="width:100%"></div></div><span class="mv" id="e-sv">100%</span></div>
     </div>
-
-    <!-- EVA INDICATOR -->
-    <div id="eva-indicator">⚠ EVA MODE ACTIVE ⚠</div>
-
-    <!-- LEFT PANEL: Ship Status -->
-    <div id="hud-left">
-      <div class="hud-panel">
-        <div class="panel-label">◈ SHIP STATUS</div>
-        <!-- Fuel -->
-        <div class="meter-row">
-          <span class="meter-icon">⛽</span>
-          <span class="meter-label">FUEL</span>
-          <div class="meter-bar"><div class="meter-fill fuel" id="fuel-bar" style="width:100%"></div></div>
-          <span class="meter-val" id="fuel-val">100%</span>
-        </div>
-        <!-- Oxygen -->
-        <div class="meter-row">
-          <span class="meter-icon">💨</span>
-          <span class="meter-label">O₂</span>
-          <div class="meter-bar"><div class="meter-fill oxygen" id="oxygen-bar" style="width:100%"></div></div>
-          <span class="meter-val" id="oxygen-val">100%</span>
-        </div>
-        <!-- Hull -->
-        <div class="meter-row">
-          <span class="meter-icon">🛡</span>
-          <span class="meter-label">HULL</span>
-          <div class="meter-bar"><div class="meter-fill hull" id="hull-bar" style="width:100%"></div></div>
-          <span class="meter-val" id="hull-val">100%</span>
-        </div>
-        <!-- Shield -->
-        <div class="meter-row">
-          <span class="meter-icon">⚡</span>
-          <span class="meter-label">SHIELD</span>
-          <div class="meter-bar"><div class="meter-fill shield" id="shield-bar" style="width:100%"></div></div>
-          <span class="meter-val" id="shield-val">100%</span>
-        </div>
-      </div>
-
-      <!-- XP & Level -->
-      <div class="hud-panel">
-        <div class="panel-label">◈ EXPERIENCE</div>
-        <div class="xp-bar-wrapper">
-          <div class="xp-fill" id="xp-fill" style="width:0%"></div>
-        </div>
-        <div class="xp-label" id="xp-label">LVL 1  ·  0/1000 XP</div>
-      </div>
-
-      <!-- Nav data -->
-      <div class="hud-panel">
-        <div class="panel-label">◈ NAVIGATION</div>
-        <div class="nav-item">
-          <span class="nav-key">SECTOR</span>
-          <span class="nav-val">SOL-ALPHA</span>
-        </div>
-        <div class="nav-item">
-          <span class="nav-key">COORDS</span>
-          <span class="nav-val" id="nav-coords">0,0,0</span>
-        </div>
-        <div class="nav-item">
-          <span class="nav-key">HEADING</span>
-          <span class="nav-val">NNE</span>
-        </div>
-        <div class="nav-item">
-          <span class="nav-key">TEMP</span>
-          <span class="nav-val">-270°C</span>
-        </div>
-      </div>
+    <!-- XP -->
+    <div class="ep gl-panel">
+      <div class="pl">◈ EXPERIENCE</div>
+      <div class="xp-bar"><div class="xp-f" id="xp-f" style="width:0%"></div></div>
+      <div class="xp-l" id="xp-l">LVL 1 · 0/1000 XP</div>
     </div>
-
-    <!-- RIGHT PANEL: Mission & Resources -->
-    <div id="hud-right">
-      <!-- Mission -->
-      <div class="hud-panel" style="background: rgba(0,20,60,0.75); border:1px solid rgba(0,212,255,0.5); border-radius:8px; padding:0.75rem 1rem; backdrop-filter:blur(12px);">
-        <div class="mission-title">◈ ACTIVE MISSION</div>
-        <div class="mission-name">Explore the Solar System</div>
-        <div class="mission-desc">Scan all 8 planets and document your findings for NOVA's research database.</div>
-        <div class="mission-progress-bar">
-          <div class="mission-progress-fill" id="mission-progress" style="width:35%"></div>
-        </div>
-        <div style="font-size:0.6rem; color:rgba(200,240,255,0.5); margin-top:0.3rem; font-family:'Orbitron',monospace;">PROGRESS: 35%</div>
-      </div>
-
-      <!-- Resources -->
-      <div class="hud-panel">
-        <div class="panel-label">◈ RESOURCES</div>
-        <div class="nav-item">
-          <span class="nav-key">💰 Credits</span>
-          <span class="nav-val" id="credits-val">850</span>
-        </div>
-        <div class="nav-item">
-          <span class="nav-key">⛏ Minerals</span>
-          <span class="nav-val" id="minerals-val">3</span>
-        </div>
-        <div class="nav-item">
-          <span class="nav-key">💎 Crystals</span>
-          <span class="nav-val" id="crystals-val">1</span>
-        </div>
-      </div>
-
-      <!-- Controls -->
-      <div class="hud-panel">
-        <div class="panel-label">◈ QUICK ACTIONS</div>
-        <div class="key-hint"><span class="key">W/S/A/D</span><span class="key-label">Move</span></div>
-        <div class="key-hint"><span class="key">WASD+Mouse</span><span class="key-label">Look</span></div>
-        <div class="key-hint"><span class="key">E</span><span class="key-label">EVA Mode</span></div>
-        <div class="key-hint"><span class="key">U</span><span class="key-label">Upgrades</span></div>
-        <div class="key-hint"><span class="key">N</span><span class="key-label">NOVA Talk</span></div>
-        <div class="key-hint"><span class="key">Click</span><span class="key-label">Scan/Interact</span></div>
-      </div>
-    </div>
-
-    <!-- BOTTOM: Velocity + Compass + Radar -->
-    <div id="hud-bottom">
-      <div class="velocity-display">
-        <span class="velocity-val" id="velocity-val">0</span>
-        <span class="velocity-unit">KM/S RELATIVE</span>
-      </div>
-
-      <div class="compass-display">
-        <div class="compass-ring">
-          <div class="compass-needle"></div>
-        </div>
-      </div>
-
-      <div class="radar-display">
-        <div class="radar-rings"></div>
-        <div class="radar-sweep"></div>
-        <!-- Random blips -->
-        <div class="radar-dot" style="top:30%;left:60%"></div>
-        <div class="radar-dot" style="top:65%;left:25%; background:#fbbf24; box-shadow:0 0 6px #fbbf24;"></div>
-        <div class="radar-dot" style="top:20%;left:40%; background:#ef4444; box-shadow:0 0 6px #ef4444;"></div>
-        <div class="radar-dot" style="top:50%;left:50%; background:#22c55e; box-shadow:0 0 6px #22c55e;"></div>
-      </div>
-    </div>
-
-    <!-- NOVA AI PANEL -->
-    <div id="nova-panel" class="hidden">
-      <div class="nova-orb"></div>
-      <div class="nova-content">
-        <div class="nova-label">◈ NOVA AI COMPANION</div>
-        <div class="nova-text" id="nova-text">"Welcome aboard LUMINA."</div>
-      </div>
-    </div>
-
-    <!-- PLANET SCANNER -->
-    <div id="planet-scanner" class="hidden">
-      <div class="scanner-scan-line"></div>
-      <div class="scanner-header">
-        <span class="scanner-icon" id="scan-icon">🌍</span>
-        <span class="scanner-planet-name">EARTH</span>
-      </div>
-      <div class="scanner-data">
-        <div class="scanner-row">
-          <span class="scanner-key">Temperature</span>
-          <span class="scanner-val" id="scan-temp">15°C avg</span>
-        </div>
-        <div class="scanner-row">
-          <span class="scanner-key">Atmosphere</span>
-          <span class="scanner-val" id="scan-atmo">N₂, O₂</span>
-        </div>
-        <div class="scanner-row">
-          <span class="scanner-key">Gravity</span>
-          <span class="scanner-val" id="scan-grav">9.81 m/s²</span>
-        </div>
-        <div class="scanner-row">
-          <span class="scanner-key">Diameter</span>
-          <span class="scanner-val" id="scan-diam">12,742 km</span>
-        </div>
-        <div class="scanner-row">
-          <span class="scanner-key">Dist. from Sun</span>
-          <span class="scanner-val" id="scan-dist">149.6M km</span>
-        </div>
-        <div class="scanner-fact" id="scan-fact">71% of Earth's surface is covered by water.</div>
-      </div>
-    </div>
-
-    <!-- NOTIFICATIONS -->
-    <div id="notifications"></div>
-
-    <!-- CROSSHAIR -->
-    <div class="crosshair">
-      <div class="crosshair-ring"></div>
-    </div>
-
-    <!-- GALAXY TRANSITION -->
-    <div id="galaxy-transition"></div>
-
-    <!-- BLACK HOLE WARNING -->
-    <div id="blackhole-warning"></div>
-
-  </div><!-- /hud-overlay -->
-
-  <!-- ╔══════════════════════════════════════════════════════════╗
-       ║              UPGRADE MENU                              ║
-       ╚══════════════════════════════════════════════════════════╝ -->
-  <div id="upgrade-menu" class="hidden">
-    <div class="upgrade-container">
-      <div class="upgrade-header">
-        <h2>◈ SHIP UPGRADES ◈</h2>
-        <p>Enhance your LUMINA Explorer with advanced technology</p>
-      </div>
-
-      <!-- Resources summary -->
-      <div class="resources-display">
-        <div class="resource-item">
-          <div class="resource-amount" id="credits-val">850</div>
-          <div class="resource-label">CREDITS</div>
-        </div>
-        <div class="resource-item">
-          <div class="resource-amount" id="minerals-val2">3</div>
-          <div class="resource-label">MINERALS</div>
-        </div>
-        <div class="resource-item">
-          <div class="resource-amount" id="crystals-val2">1</div>
-          <div class="resource-label">CRYSTALS</div>
-        </div>
-      </div>
-
-      <div class="upgrade-grid">
-        <!-- Thrusters -->
-        <div class="upgrade-card" data-system="thrusters" onclick="buyUpgrade('thrusters')">
-          <div class="upgrade-icon">🚀</div>
-          <div class="upgrade-name">THRUSTERS</div>
-          <div class="upgrade-level-bar">
-            <div class="upgrade-pip filled"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-          </div>
-          <div class="upgrade-cost">Cost: 200 CR</div>
-        </div>
-        <!-- Scanner -->
-        <div class="upgrade-card" data-system="scanner" onclick="buyUpgrade('scanner')">
-          <div class="upgrade-icon">🔭</div>
-          <div class="upgrade-name">SCANNER</div>
-          <div class="upgrade-level-bar">
-            <div class="upgrade-pip filled"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-          </div>
-          <div class="upgrade-cost">Cost: 150 CR</div>
-        </div>
-        <!-- Fuel Efficiency -->
-        <div class="upgrade-card" data-system="fuelEff" onclick="buyUpgrade('fuelEff')">
-          <div class="upgrade-icon">⛽</div>
-          <div class="upgrade-name">FUEL EFFICIENCY</div>
-          <div class="upgrade-level-bar">
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-          </div>
-          <div class="upgrade-cost">Cost: 120 CR</div>
-        </div>
-        <!-- Shield -->
-        <div class="upgrade-card" data-system="shield" onclick="buyUpgrade('shield')">
-          <div class="upgrade-icon">🛡</div>
-          <div class="upgrade-name">SHIELD MATRIX</div>
-          <div class="upgrade-level-bar">
-            <div class="upgrade-pip filled"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-          </div>
-          <div class="upgrade-cost">Cost: 200 CR</div>
-        </div>
-        <!-- Navigation -->
-        <div class="upgrade-card" data-system="navigation" onclick="buyUpgrade('navigation')">
-          <div class="upgrade-icon">🗺</div>
-          <div class="upgrade-name">NAVIGATION</div>
-          <div class="upgrade-level-bar">
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-          </div>
-          <div class="upgrade-cost">Cost: 100 CR</div>
-        </div>
-        <!-- AI -->
-        <div class="upgrade-card" data-system="ai" onclick="buyUpgrade('ai')">
-          <div class="upgrade-icon">🤖</div>
-          <div class="upgrade-name">NOVA AI CORE</div>
-          <div class="upgrade-level-bar">
-            <div class="upgrade-pip filled"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-          </div>
-          <div class="upgrade-cost">Cost: 180 CR</div>
-        </div>
-        <!-- Jetpack -->
-        <div class="upgrade-card" data-system="jetpack" onclick="buyUpgrade('jetpack')">
-          <div class="upgrade-icon">🧳</div>
-          <div class="upgrade-name">JETPACK</div>
-          <div class="upgrade-level-bar">
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-          </div>
-          <div class="upgrade-cost">Cost: 250 CR</div>
-        </div>
-        <!-- Radar -->
-        <div class="upgrade-card" data-system="radar" onclick="buyUpgrade('radar')">
-          <div class="upgrade-icon">📡</div>
-          <div class="upgrade-name">RADAR ARRAY</div>
-          <div class="upgrade-level-bar">
-            <div class="upgrade-pip filled"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-          </div>
-          <div class="upgrade-cost">Cost: 130 CR</div>
-        </div>
-        <!-- Storage -->
-        <div class="upgrade-card" data-system="storage" onclick="buyUpgrade('storage')">
-          <div class="upgrade-icon">📦</div>
-          <div class="upgrade-name">CARGO HOLD</div>
-          <div class="upgrade-level-bar">
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-          </div>
-          <div class="upgrade-cost">Cost: 90 CR</div>
-        </div>
-        <!-- Appearance -->
-        <div class="upgrade-card" data-system="appearance" onclick="buyUpgrade('appearance')">
-          <div class="upgrade-icon">✨</div>
-          <div class="upgrade-name">HULL SKIN</div>
-          <div class="upgrade-level-bar">
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-            <div class="upgrade-pip"></div>
-          </div>
-          <div class="upgrade-cost">Cost: 80 CR</div>
-        </div>
-      </div>
-
-      <button class="upgrade-close-btn" onclick="closeUpgradeMenu()">[ CLOSE — RETURN TO COCKPIT ]</button>
+    <!-- Nav -->
+    <div class="ep gl-panel">
+      <div class="pl">◈ NAVIGATION</div>
+      <div class="ni"><span class="nk">SECTOR</span><span class="nv">SOL-ALPHA</span></div>
+      <div class="ni"><span class="nk">HEADING</span><span class="nv">000°</span></div>
+      <div class="ni"><span class="nk">TEMP</span><span class="nv">-270°C</span></div>
     </div>
   </div>
 
-  <!-- ╔══════════════════════════════════════════════════════════╗
-       ║              A-FRAME VR SCENE                          ║
-       ╚══════════════════════════════════════════════════════════╝ -->
-  <a-scene
-    id="lumina-scene"
-    renderer="antialias:true; colorManagement:true; physicallyCorrectLights:true; highRefreshRate:true; exposure:1.0;"
-    vr-mode-ui="enabled:true"
-    background="color: #000007"
-    fog="type:exponential; color:#000010; density:0.0008"
-    stats="false"
-  >
+  <div id="exp-right">
+    <!-- Mission -->
+    <div class="ep gl-panel">
+      <div class="miss-t">◈ ACTIVE MISSION</div>
+      <div class="miss-n">Explore the Solar System</div>
+      <div class="miss-d">Scan all 8 planets and document your findings.</div>
+      <div class="miss-pb"><div class="miss-pf"></div></div>
+      <div style="font-size:.55rem;color:rgba(200,240,255,.4);margin-top:.3rem;font-family:var(--f-title)">PROGRESS: 35%</div>
+    </div>
+    <!-- Resources -->
+    <div class="ep gl-panel">
+      <div class="pl">◈ RESOURCES</div>
+      <div class="ni"><span class="nk">💰 Credits</span><span class="nv" id="e-cr">850</span></div>
+      <div class="ni"><span class="nk">⛏ Minerals</span><span class="nv" id="e-min">3</span></div>
+      <div class="ni"><span class="nk">💎 Crystals</span><span class="nv" id="e-cry">1</span></div>
+    </div>
+    <!-- Controls -->
+    <div class="ep gl-panel">
+      <div class="pl">◈ CONTROLS</div>
+      <div class="kh"><span class="ky">WASD</span><span class="kl">Move</span></div>
+      <div class="kh"><span class="ky">Mouse</span><span class="kl">Look</span></div>
+      <div class="kh"><span class="ky">N</span><span class="kl">NOVA talk</span></div>
+      <div class="kh"><span class="ky">U</span><span class="kl">Upgrades</span></div>
+      <div class="kh"><span class="ky">Click</span><span class="kl">Scan/Collect</span></div>
+    </div>
+  </div>
 
-    <!-- ── ASSETS ─────────────────────────────────────────────── -->
-    <a-assets timeout="15000">
-      <!-- Planet textures via esoteric CDN -->
-      <img id="tex-sun"     src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/The_Sun_by_the_Atmospheric_Imaging_Assembly_of_NASA%27s_Solar_Dynamics_Observatory_-_20100819.jpg/1024px-The_Sun_by_the_Atmospheric_Imaging_Assembly_of_NASA%27s_Solar_Dynamics_Observatory_-_20100819.jpg" crossorigin="anonymous" />
-      <img id="tex-earth"   src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Africa_and_Europe_from_a_Million_Miles_Away.png/1024px-Africa_and_Europe_from_a_Million_Miles_Away.png" crossorigin="anonymous" />
-      <img id="tex-mars"    src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/1024px-OSIRIS_Mars_true_color.jpg" crossorigin="anonymous" />
-      <img id="tex-jupiter" src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Jupiter_and_its_shrunken_Great_Red_Spot.jpg/1024px-Jupiter_and_its_shrunken_Great_Red_Spot.jpg" crossorigin="anonymous" />
-      <img id="tex-moon"    src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/FullMoon2010.jpg/1024px-FullMoon2010.jpg" crossorigin="anonymous" />
-      <img id="tex-saturn"  src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Saturn_during_Equinox.jpg/1024px-Saturn_during_Equinox.jpg" crossorigin="anonymous" />
-      <img id="tex-venus"   src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Venus-real_color.jpg/1024px-Venus-real_color.jpg" crossorigin="anonymous" />
-      <img id="tex-neptune" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Neptune_Full.jpg/1024px-Neptune_Full.jpg" crossorigin="anonymous" />
-      <img id="tex-nebula"  src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Eta_Carinae.jpg/1280px-Eta_Carinae.jpg" crossorigin="anonymous" />
-      <!-- Milky Way -->
-      <img id="tex-sky"     src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/ESO-VLT-Laser-phot-0a-99.jpg/1280px-ESO-VLT-Laser-phot-0a-99.jpg" crossorigin="anonymous" />
-    </a-assets>
+  <!-- Bottom: velocity + compass + radar -->
+  <div id="exp-bottom">
+    <div class="vel-d gl-panel"><span class="vel-v" id="e-vel">0</span><span class="vel-u">KM/S</span></div>
+    <div class="comp gl-panel"><div class="comp-ring"><div class="comp-needle"></div></div></div>
+    <div class="radar-d gl-panel"><div class="radar-rings"></div><div class="radar-sweep"></div>
+      <div class="rdot" style="top:30%;left:60%"></div>
+      <div class="rdot" style="top:65%;left:25%;background:var(--c-gold);box-shadow:0 0 6px var(--c-gold)"></div>
+      <div class="rdot" style="top:20%;left:40%;background:var(--c-red);box-shadow:0 0 6px var(--c-red)"></div>
+    </div>
+  </div>
 
-    <!-- ── CAMERA RIG ─────────────────────────────────────────── -->
-    <a-entity id="camera-rig" position="0 1.6 0" movement-controls="fly:true; speed:8; constrainToNavMesh:false">
-      <a-camera
-        id="main-camera"
-        look-controls="pointerLockEnabled:true"
-        wasd-controls="fly:true; speed:8"
-        fov="80"
-        near="0.1"
-        far="2000"
-      >
-        <!-- Cursor for gaze interaction -->
-        <a-cursor
-          id="cursor"
-          color="#00ffcc"
-          opacity="0.5"
-          raycaster="objects: .scannable, .interactable, .collectible-obj"
-          fuse="true"
-          fuse-timeout="2000"
-          animation__click="property:scale; startEvents:click; from:0.1 0.1 0.1; to:1 1 1; dur:150"
-        ></a-cursor>
+  <!-- NOVA panel -->
+  <div id="nova-panel" class="hidden">
+    <div class="norb"></div>
+    <div><div class="n-lbl">◈ NOVA AI COMPANION</div><div class="n-txt" id="nova-text">"Welcome aboard LUMINA."</div></div>
+  </div>
 
-        <!-- VR Controllers visualization (desktop fallback) -->
-      </a-camera>
+  <!-- Planet scanner -->
+  <div id="planet-scanner" class="hidden">
+    <div class="sc-line"></div>
+    <div class="sc-hdr"><span id="sc-icon">🌍</span><span class="sc-pname" id="sc-pname">EARTH</span></div>
+    <div class="sc-row"><span class="sc-key">Temperature</span><span class="sc-val" id="sc-temp">15°C avg</span></div>
+    <div class="sc-row"><span class="sc-key">Atmosphere</span><span class="sc-val" id="sc-atmo">N₂, O₂</span></div>
+    <div class="sc-row"><span class="sc-key">Gravity</span><span class="sc-val" id="sc-grav">9.81 m/s²</span></div>
+    <div class="sc-row"><span class="sc-key">Diameter</span><span class="sc-val" id="sc-diam">12,742 km</span></div>
+    <div class="sc-row"><span class="sc-key">Dist. from Sun</span><span class="sc-val" id="sc-dist">149.6M km</span></div>
+    <div class="sc-fact" id="sc-fact">71% of Earth's surface is covered by water.</div>
+  </div>
+
+  <!-- Notifications -->
+  <div id="notif-c"></div>
+
+  <!-- Crosshair -->
+  <div class="xhair"><div class="xhair-ring"></div></div>
+
+  <!-- Effects -->
+  <div id="galaxy-trans"></div>
+  <div id="bh-warn"></div>
+</div>
+
+<!-- Upgrade menu -->
+<div id="upgrade-menu" class="hidden">
+  <div class="upg-con">
+    <div class="upg-h" style="margin-bottom:1rem">
+      <h2>◈ SHIP UPGRADES ◈</h2>
+      <p>Enhance your LUMINA Explorer</p>
+    </div>
+    <div class="res-row">
+      <div class="ri"><div class="ri-a" id="upg-cr">850</div><div class="ri-l">CREDITS</div></div>
+      <div class="ri"><div class="ri-a" id="upg-min">3</div><div class="ri-l">MINERALS</div></div>
+      <div class="ri"><div class="ri-a" id="upg-cry">1</div><div class="ri-l">CRYSTALS</div></div>
+    </div>
+    <div class="upg-grid">
+      <div class="upg-card" data-sys="thrusters" onclick="buyUpg('thrusters')"><div class="u-ic">🚀</div><div class="u-nm">THRUSTERS</div><div class="u-pips"><div class="upip on"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div></div><div class="u-cost">200 CR</div></div>
+      <div class="upg-card" data-sys="scanner" onclick="buyUpg('scanner')"><div class="u-ic">🔭</div><div class="u-nm">SCANNER</div><div class="u-pips"><div class="upip on"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div></div><div class="u-cost">150 CR</div></div>
+      <div class="upg-card" data-sys="fuelEff" onclick="buyUpg('fuelEff')"><div class="u-ic">⛽</div><div class="u-nm">FUEL EFF.</div><div class="u-pips"><div class="upip"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div></div><div class="u-cost">120 CR</div></div>
+      <div class="upg-card" data-sys="shield" onclick="buyUpg('shield')"><div class="u-ic">🛡</div><div class="u-nm">SHIELD</div><div class="u-pips"><div class="upip on"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div></div><div class="u-cost">200 CR</div></div>
+      <div class="upg-card" data-sys="nav" onclick="buyUpg('nav')"><div class="u-ic">🗺</div><div class="u-nm">NAVIGATION</div><div class="u-pips"><div class="upip"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div></div><div class="u-cost">100 CR</div></div>
+      <div class="upg-card" data-sys="ai" onclick="buyUpg('ai')"><div class="u-ic">🤖</div><div class="u-nm">NOVA AI</div><div class="u-pips"><div class="upip on"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div></div><div class="u-cost">180 CR</div></div>
+      <div class="upg-card" data-sys="jetpack" onclick="buyUpg('jetpack')"><div class="u-ic">🧳</div><div class="u-nm">JETPACK</div><div class="u-pips"><div class="upip"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div></div><div class="u-cost">250 CR</div></div>
+      <div class="upg-card" data-sys="radar" onclick="buyUpg('radar')"><div class="u-ic">📡</div><div class="u-nm">RADAR</div><div class="u-pips"><div class="upip on"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div><div class="upip"></div></div><div class="u-cost">130 CR</div></div>
+    </div>
+    <button class="upg-close" onclick="document.getElementById('upgrade-menu').classList.add('hidden')">[ CLOSE — RETURN TO COCKPIT ]</button>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════
+     FLIGHT HUD (shown in flight mode)
+╚══════════════════════════════════════════════════════ -->
+<div id="flt-hud" class="hide">
+  <div class="hud-corner tl"></div><div class="hud-corner tr"></div>
+  <div class="hud-corner bl"></div><div class="hud-corner br"></div>
+
+  <div id="flt-top">
+    <div class="flt-title">◈ FLIGHT MODE ◈</div>
+    <div class="exp-clock" id="flt-clock">00:00:00</div>
+  </div>
+
+  <!-- ADI -->
+  <div id="adi-wrap">
+    <div id="adi-inner"><div id="adi-sky"></div><div id="adi-gnd"></div><div id="adi-hor"></div></div>
+    <div id="adi-ctr"></div><div id="adi-lbl">ATTITUDE</div>
+  </div>
+
+  <div id="spd-tape"><div class="tp-lbl">SPD</div><div class="tp-val" id="f-spd">0</div><div class="tp-unit">KM/S</div></div>
+  <div id="thr-tape"><div class="tp-lbl">THR</div><div class="tp-val" id="f-thr">0</div><div class="tp-unit">%</div></div>
+
+  <div id="flt-stat">
+    <div class="fs-lbl">◈ SHIP STATUS</div>
+    <div class="br"><span class="bi">⛽</span><span class="bn">FUEL</span><div class="bt"><div class="bf f" id="f-fb" style="width:100%"></div></div><span class="bp" id="f-fv">100%</span></div>
+    <div class="br"><span class="bi">🛡</span><span class="bn">HULL</span><div class="bt"><div class="bf h" id="f-hb" style="width:100%"></div></div><span class="bp" id="f-hv">100%</span></div>
+    <div class="br"><span class="bi">⚡</span><span class="bn">SHLD</span><div class="bt"><div class="bf s" id="f-sb" style="width:100%"></div></div><span class="bp" id="f-sv">100%</span></div>
+  </div>
+
+  <div id="thr-hud">
+    <div id="thr-lbl">THROTTLE</div>
+    <div id="thr-track"><div id="thr-fill" style="width:0%"></div></div>
+    <div id="thr-pct">0%</div>
+  </div>
+
+  <div id="flt-br">
+    <div class="ast-box"><div class="ab-lbl">⚠ ASTEROIDS</div><div class="ab-val" id="f-ast">0</div></div>
+    <div class="score-box"><div class="sb-lbl">★ SCORE</div><div class="sb-val" id="f-score">0</div></div>
+  </div>
+
+  <div id="flt-ctrl">
+    <div class="ct">◈ CONTROLS</div>
+    <div class="cr"><span class="ck">W/↑</span><span class="cl">Throttle Up</span></div>
+    <div class="cr"><span class="ck">S/↓</span><span class="cl">Throttle Down</span></div>
+    <div class="cr"><span class="ck">A/D</span><span class="cl">Roll</span></div>
+    <div class="cr"><span class="ck">Q/E</span><span class="cl">Yaw</span></div>
+    <div class="cr"><span class="ck">Shift</span><span class="cl">BOOST</span></div>
+    <div class="cr"><span class="ck">Space</span><span class="cl">Brake</span></div>
+    <div class="cr" style="margin-top:4px"><span class="ck" style="font-size:7px">VR</span><span class="cl">L-Stick · R-Stick</span></div>
+  </div>
+
+  <div id="nova-msg" class="hide">
+    <div class="n2orb"></div>
+    <div class="n2txt" id="nova-txt">"Welcome aboard, Commander."</div>
+  </div>
+</div>
+
+<!-- Mode switch button (always visible in-game) -->
+<button id="mode-btn" style="display:none" onclick="switchMode()">⇌ SWITCH MODE</button>
+
+<!-- Full-screen effects -->
+<div id="danger-flash"></div>
+<div id="boost-flash"></div>
+<div id="thr-glow"></div>
+
+<!-- ╔══════════════════════════════════════════════════════
+     A-FRAME SCENE (shared by both modes)
+╚══════════════════════════════════════════════════════ -->
+<a-scene
+  id="main-scene"
+  renderer="antialias:true;colorManagement:true;physicallyCorrectLights:true;highRefreshRate:true;"
+  vr-mode-ui="enabled:true"
+  background="color:#000007"
+  fog="type:exponential;color:#000010;density:0.001"
+  style="display:none"
+>
+  <!-- ASSETS — NASA / ESA high-resolution textures -->
+  <a-assets timeout="20000">
+    <!-- Earth — NASA DSCOVR EPIC -->
+    <img id="tex-earth"    src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Earthmap1000x500compac.jpg/640px-Earthmap1000x500compac.jpg" crossorigin="anonymous"/>
+    <!-- Earth clouds overlay -->
+    <img id="tex-clouds"   src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Fair_Weather_Clouds_on_Earth.jpg/1024px-Fair_Weather_Clouds_on_Earth.jpg" crossorigin="anonymous"/>
+    <!-- Mars — ESA Mars Express -->
+    <img id="tex-mars"     src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/2048px-OSIRIS_Mars_true_color.jpg" crossorigin="anonymous"/>
+    <!-- Jupiter — Cassini 2048 -->
+    <img id="tex-jupiter"  src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Jupiter_and_its_shrunken_Great_Red_Spot.jpg/2048px-Jupiter_and_its_shrunken_Great_Red_Spot.jpg" crossorigin="anonymous"/>
+    <!-- Moon — LRO 2048 -->
+    <img id="tex-moon"     src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/FullMoon2010.jpg/2048px-FullMoon2010.jpg" crossorigin="anonymous"/>
+    <!-- Saturn — Cassini -->
+    <img id="tex-saturn"   src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Saturn_during_Equinox.jpg/2048px-Saturn_during_Equinox.jpg" crossorigin="anonymous"/>
+    <!-- Saturn rings -->
+    <img id="tex-rings"    src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Saturn_ring_spokes.jpg/1024px-Saturn_ring_spokes.jpg" crossorigin="anonymous"/>
+    <!-- Venus — Magellan radar -->
+    <img id="tex-venus"    src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Venus-real_color.jpg/2048px-Venus-real_color.jpg" crossorigin="anonymous"/>
+    <!-- Neptune — Voyager 2 -->
+    <img id="tex-neptune"  src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Neptune_Full.jpg/2048px-Neptune_Full.jpg" crossorigin="anonymous"/>
+    <!-- Mercury — MESSENGER -->
+    <img id="tex-mercury"  src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Mercury_in_color_-_Prockter07-edit1.jpg/2048px-Mercury_in_color_-_Prockter07-edit1.jpg" crossorigin="anonymous"/>
+    <!-- Sun — SDO AIA -->
+    <img id="tex-sun"      src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/The_Sun_by_the_Atmospheric_Imaging_Assembly_of_NASA%27s_Solar_Dynamics_Observatory_-_20100819.jpg/1024px-The_Sun_by_the_Atmospheric_Imaging_Assembly_of_NASA%27s_Solar_Dynamics_Observatory_-_20100819.jpg" crossorigin="anonymous"/>
+    <!-- Milky Way deep field skybox -->
+    <img id="tex-sky"      src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/ESO-VLT-Laser-phot-0a-99.jpg/1280px-ESO-VLT-Laser-phot-0a-99.jpg" crossorigin="anonymous"/>
+  </a-assets>
+
+  <!-- CAMERA RIG — flight-controller drives it in flight mode, wasd-controls in explore -->
+  <a-entity id="rig" position="0 0 0" flight-controller>
+    <a-camera id="cam" look-controls="enabled:false" wasd-controls="enabled:false" fov="85" near="0.05" far="1500">
+
+      <!-- ═══════════════════════════════════════════════════════
+           COCKPIT INTERIOR (visible in flight mode)
+           ═══════════════════════════════════════════════════════ -->
+      <a-entity id="cockpit-root" visible="false" position="0 -0.28 -0.7">
+
+        <!-- ── MAIN INSTRUMENT PANEL ── -->
+        <!-- Panel base slab -->
+        <a-box width="1.85" height="0.28" depth="0.6"
+          color="#050c18" material="roughness:0.85;metalness:0.45;emissive:#020710;emissive-intensity:0.6"
+          position="0 -0.22 0.05"></a-box>
+        <!-- Angled face -->
+        <a-box width="1.8" height="0.5" depth="0.06"
+          color="#070e1c" material="roughness:0.8;metalness:0.5;emissive:#030a14;emissive-intensity:0.5"
+          position="0 -0.06 -0.27" rotation="28 0 0"></a-box>
+
+        <!-- Top cyan glow strip -->
+        <a-box width="1.75" height="0.014" depth="0.012"
+          color="#00d4ff" material="emissive:#00d4ff;emissive-intensity:2;transparent:true;opacity:0.95;blending:additive"
+          position="0 0.0 -0.27" rotation="28 0 0"></a-box>
+        <!-- Secondary glow -->
+        <a-box width="1.75" height="0.006" depth="0.01"
+          color="#0055ff" material="emissive:#0055ff;emissive-intensity:1.2;transparent:true;opacity:0.5;blending:additive"
+          position="0 -0.018 -0.27" rotation="28 0 0"></a-box>
+
+        <!-- CENTER DISPLAY (main nav) -->
+        <a-plane width="0.52" height="0.3" color="#000d22"
+          material="transparent:true;opacity:0.97;emissive:#001530;emissive-intensity:0.8"
+          position="0 -0.04 -0.26" rotation="28 0 0"></a-plane>
+        <a-text value="LUMINA FLIGHT CONTROL" position="0 -0.008 -0.245"
+          rotation="28 0 0" align="center" color="#00d4ff" width="1.3" font="mozillavr"></a-text>
+        <a-text value="NAV SYS ONLINE" position="0 -0.045 -0.246"
+          rotation="28 0 0" align="center" color="#00ffcc" width="0.7" font="mozillavr"></a-text>
+        <!-- Scanline on center display -->
+        <a-box width="0.5" height="0.003" depth="0.002"
+          color="#00ffcc" material="emissive:#00ffcc;emissive-intensity:1.5;transparent:true;opacity:0.6;blending:additive"
+          position="0 -0.022 -0.245" rotation="28 0 0"
+          animation="property:position;from:0 -0.072 -0.245;to:0 0.012 -0.245;dur:2000;loop:true;easing:linear"></a-box>
+
+        <!-- LEFT DISPLAY -->
+        <a-plane width="0.36" height="0.26" color="#000d22"
+          material="transparent:true;opacity:0.97;emissive:#001d33;emissive-intensity:0.7"
+          position="-0.64 -0.05 -0.265" rotation="28 0 0"></a-plane>
+        <a-text value="ENGINE STATUS" position="-0.64 -0.02 -0.25"
+          rotation="28 0 0" align="center" color="#00ffcc" width="1.0" font="mozillavr"></a-text>
+        <a-text value="PWR: 98%" position="-0.64 -0.052 -0.25"
+          rotation="28 0 0" align="center" color="#44ff88" width="0.75" font="mozillavr"></a-text>
+        <a-text value="TEMP: NOMINAL" position="-0.64 -0.075 -0.25"
+          rotation="28 0 0" align="center" color="#44ff88" width="0.65" font="mozillavr"></a-text>
+
+        <!-- RIGHT DISPLAY -->
+        <a-plane width="0.36" height="0.26" color="#000d22"
+          material="transparent:true;opacity:0.97;emissive:#1a002a;emissive-intensity:0.6"
+          position="0.64 -0.05 -0.265" rotation="28 0 0"></a-plane>
+        <a-text value="RADAR ACTIVE" position="0.64 -0.02 -0.25"
+          rotation="28 0 0" align="center" color="#cc88ff" width="1.0" font="mozillavr"></a-text>
+        <a-text value="CONTACTS: 0" position="0.64 -0.052 -0.25"
+          rotation="28 0 0" align="center" color="#ff6699" width="0.75" font="mozillavr"></a-text>
+        <a-text value="SHIELD: 100%" position="0.64 -0.075 -0.25"
+          rotation="28 0 0" align="center" color="#cc88ff" width="0.65" font="mozillavr"></a-text>
+
+        <!-- Status lights row -->
+        <a-sphere radius="0.013" color="#00ff88" material="emissive:#00ff88;emissive-intensity:1.4" position="-0.7 -0.135 -0.26" rotation="28 0 0" animation="property:material.emissiveIntensity;from:1.4;to:0.3;dur:1800;loop:true;dir:alternate"></a-sphere>
+        <a-sphere radius="0.013" color="#00ff88" material="emissive:#00ff88;emissive-intensity:1.4" position="-0.66 -0.135 -0.26" rotation="28 0 0" animation="property:material.emissiveIntensity;from:1.4;to:0.4;dur:2200;loop:true;dir:alternate"></a-sphere>
+        <a-sphere radius="0.013" color="#ffaa00" material="emissive:#ffaa00;emissive-intensity:1.3" position="-0.5 -0.135 -0.263" rotation="28 0 0" animation="property:material.emissiveIntensity;from:1.3;to:0.4;dur:900;loop:true;dir:alternate"></a-sphere>
+        <a-sphere radius="0.013" color="#ff3344" material="emissive:#ff3344;emissive-intensity:1.5" position="-0.42 -0.135 -0.263" rotation="28 0 0" animation="property:material.emissiveIntensity;from:1.5;to:0;dur:600;loop:true;dir:alternate"></a-sphere>
+        <a-sphere radius="0.013" color="#00d4ff" material="emissive:#00d4ff;emissive-intensity:1.2" position="0.42 -0.135 -0.263" rotation="28 0 0"></a-sphere>
+        <a-sphere radius="0.013" color="#00d4ff" material="emissive:#00d4ff;emissive-intensity:1.2" position="0.5 -0.135 -0.263" rotation="28 0 0" animation="property:material.emissiveIntensity;from:1.2;to:0.5;dur:1400;loop:true;dir:alternate"></a-sphere>
+        <a-sphere radius="0.013" color="#8844ff" material="emissive:#8844ff;emissive-intensity:1.0" position="0.66 -0.135 -0.263" rotation="28 0 0" animation="property:material.emissiveIntensity;from:1.0;to:0.3;dur:3000;loop:true;dir:alternate"></a-sphere>
+
+        <!-- Toggle switches row -->
+        <a-box width="0.025" height="0.04" depth="0.015" color="#1a2a3c" material="roughness:0.6;metalness:0.7" position="-0.3 -0.137 -0.264" rotation="28 -15 0"></a-box>
+        <a-box width="0.025" height="0.04" depth="0.015" color="#1a2a3c" material="roughness:0.6;metalness:0.7" position="-0.24 -0.137 -0.264" rotation="28 15 0"></a-box>
+        <a-box width="0.025" height="0.04" depth="0.015" color="#1a2a3c" material="roughness:0.6;metalness:0.7" position="-0.18 -0.137 -0.264" rotation="28 -10 0"></a-box>
+        <a-box width="0.025" height="0.04" depth="0.015" color="#1a2a3c" material="roughness:0.6;metalness:0.7" position="0.18 -0.137 -0.264" rotation="28 5 0"></a-box>
+        <a-box width="0.025" height="0.04" depth="0.015" color="#1a2a3c" material="roughness:0.6;metalness:0.7" position="0.24 -0.137 -0.264" rotation="28 -8 0"></a-box>
+        <a-box width="0.025" height="0.04" depth="0.015" color="#1a2a3c" material="roughness:0.6;metalness:0.7" position="0.30 -0.137 -0.264" rotation="28 12 0"></a-box>
+
+        <!-- LEFT ARMREST + HAND GRIP -->
+        <a-box width="0.22" height="0.055" depth="0.48" color="#05101e"
+          material="roughness:0.9;metalness:0.3;emissive:#020810;emissive-intensity:0.3"
+          position="-0.76 -0.22 0.05"></a-box>
+        <!-- Grip texture ridges -->
+        <a-box width="0.2" height="0.01" depth="0.06" color="#0c1e30" material="roughness:1" position="-0.76 -0.194 0.08"></a-box>
+        <a-box width="0.2" height="0.01" depth="0.06" color="#0c1e30" material="roughness:1" position="-0.76 -0.194 0.14"></a-box>
+        <a-box width="0.2" height="0.01" depth="0.06" color="#0c1e30" material="roughness:1" position="-0.76 -0.194 0.20"></a-box>
+        <!-- Armrest glow strip -->
+        <a-box width="0.2" height="0.007" depth="0.44" color="#00d4ff"
+          material="emissive:#00d4ff;emissive-intensity:1.1;transparent:true;opacity:0.65;blending:additive"
+          position="-0.76 -0.193 0.05"></a-box>
+        <!-- Left armrest button cluster -->
+        <a-sphere radius="0.016" color="#00ffcc" material="emissive:#00ffcc;emissive-intensity:1" position="-0.76 -0.18 -0.14"></a-sphere>
+        <a-sphere radius="0.016" color="#ff4466" material="emissive:#ff4466;emissive-intensity:1" position="-0.72 -0.18 -0.18"></a-sphere>
+        <a-sphere radius="0.016" color="#ffaa00" material="emissive:#ffaa00;emissive-intensity:1" position="-0.80 -0.18 -0.18"></a-sphere>
+
+        <!-- RIGHT ARMREST -->
+        <a-box width="0.22" height="0.055" depth="0.48" color="#05101e"
+          material="roughness:0.9;metalness:0.3;emissive:#020810;emissive-intensity:0.3"
+          position="0.76 -0.22 0.05"></a-box>
+        <a-box width="0.2" height="0.01" depth="0.06" color="#0c1e30" material="roughness:1" position="0.76 -0.194 0.08"></a-box>
+        <a-box width="0.2" height="0.01" depth="0.06" color="#0c1e30" material="roughness:1" position="0.76 -0.194 0.14"></a-box>
+        <a-box width="0.2" height="0.01" depth="0.06" color="#0c1e30" material="roughness:1" position="0.76 -0.194 0.20"></a-box>
+        <a-box width="0.2" height="0.007" depth="0.44" color="#00d4ff"
+          material="emissive:#00d4ff;emissive-intensity:1.1;transparent:true;opacity:0.65;blending:additive"
+          position="0.76 -0.193 0.05"></a-box>
+        <a-sphere radius="0.016" color="#cc88ff" material="emissive:#cc88ff;emissive-intensity:1" position="0.76 -0.18 -0.14"></a-sphere>
+        <a-sphere radius="0.016" color="#00ffcc" material="emissive:#00ffcc;emissive-intensity:1" position="0.72 -0.18 -0.18"></a-sphere>
+
+        <!-- YOKE COLUMN -->
+        <a-entity id="yoke-group" position="0 -0.04 0.15">
+          <!-- Column base -->
+          <a-cylinder radius="0.028" height="0.28" color="#0a1620"
+            material="roughness:0.7;metalness:0.6;emissive:#040e18;emissive-intensity:0.35"
+            position="0 -0.1 0"></a-cylinder>
+          <!-- Column glow ring -->
+          <a-torus radius="0.032" radius-tubular="0.004" arc="360" color="#00d4ff"
+            material="emissive:#00d4ff;emissive-intensity:1;transparent:true;opacity:0.85;blending:additive"
+            position="0 -0.02 0" rotation="90 0 0"></a-torus>
+          <!-- YOKE HEAD -->
+          <a-entity id="yoke-head" position="0 0.04 0">
+            <!-- Crossbar -->
+            <a-cylinder radius="0.02" height="0.36" color="#102030"
+              material="roughness:0.65;metalness:0.7;emissive:#08121e;emissive-intensity:0.4"
+              rotation="0 0 90"></a-cylinder>
+            <!-- Left grip -->
+            <a-entity position="-0.18 0 0">
+              <a-cylinder radius="0.033" height="0.14" color="#0d1e2e"
+                material="roughness:0.8;metalness:0.5;emissive:#07101c;emissive-intensity:0.5"></a-cylinder>
+              <!-- Grip ridges -->
+              <a-torus radius="0.034" radius-tubular="0.005" arc="360" color="#1a2e40" position="0 0.02 0" rotation="90 0 0"></a-torus>
+              <a-torus radius="0.034" radius-tubular="0.005" arc="360" color="#1a2e40" position="0 -0.02 0" rotation="90 0 0"></a-torus>
+              <!-- Thumb button -->
+              <a-sphere radius="0.02" color="#00d4ff" material="emissive:#00d4ff;emissive-intensity:1.2" position="0 0.075 0.018"
+                animation="property:material.emissiveIntensity;from:1.2;to:0.5;dur:1500;loop:true;dir:alternate"></a-sphere>
+              <!-- Trigger button -->
+              <a-sphere radius="0.016" color="#ff4466" material="emissive:#ff4466;emissive-intensity:1.2" position="0.02 0.04 0.03"
+                animation="property:material.emissiveIntensity;from:1.2;to:0.3;dur:800;loop:true;dir:alternate"></a-sphere>
+            </a-entity>
+            <!-- Right grip -->
+            <a-entity position="0.18 0 0">
+              <a-cylinder radius="0.033" height="0.14" color="#0d1e2e"
+                material="roughness:0.8;metalness:0.5;emissive:#07101c;emissive-intensity:0.5"></a-cylinder>
+              <a-torus radius="0.034" radius-tubular="0.005" arc="360" color="#1a2e40" position="0 0.02 0" rotation="90 0 0"></a-torus>
+              <a-torus radius="0.034" radius-tubular="0.005" arc="360" color="#1a2e40" position="0 -0.02 0" rotation="90 0 0"></a-torus>
+              <a-sphere radius="0.02" color="#ff4466" material="emissive:#ff4466;emissive-intensity:1.2" position="0 0.075 0.018"
+                animation="property:material.emissiveIntensity;from:1.2;to:0.3;dur:700;loop:true;dir:alternate"></a-sphere>
+              <a-sphere radius="0.016" color="#ffaa00" material="emissive:#ffaa00;emissive-intensity:1" position="-0.02 0.04 0.03"></a-sphere>
+            </a-entity>
+            <!-- Center hub -->
+            <a-sphere radius="0.028" color="#00d4ff" material="emissive:#00d4ff;emissive-intensity:0.9;roughness:0.4;metalness:0.6"></a-sphere>
+            <!-- LUMINA logo ring -->
+            <a-torus radius="0.025" radius-tubular="0.004" arc="360" color="#00ffcc"
+              material="emissive:#00ffcc;emissive-intensity:0.8;transparent:true;opacity:0.9;blending:additive"
+              rotation="90 0 0"></a-torus>
+          </a-entity>
+        </a-entity>
+
+        <!-- THROTTLE QUADRANT (left console) -->
+        <a-entity position="-0.66 -0.1 0.18">
+          <!-- Console block -->
+          <a-box width="0.18" height="0.22" depth="0.3" color="#040c18"
+            material="roughness:0.85;metalness:0.4;emissive:#020810;emissive-intensity:0.3"></a-box>
+          <!-- Throttle rail -->
+          <a-box width="0.015" height="0.22" depth="0.02" color="#0d2030"
+            material="roughness:0.6;metalness:0.8" position="0 0 -0.05"></a-box>
+          <!-- Throttle handle -->
+          <a-entity id="throttle-handle" position="0 0.04 -0.05">
+            <a-box width="0.075" height="0.055" depth="0.075" color="#1a2a3c"
+              material="roughness:0.7;metalness:0.6;emissive:#0a1828;emissive-intensity:0.5"></a-box>
+            <a-box width="0.058" height="0.018" depth="0.058" color="#00d4ff"
+              material="emissive:#00d4ff;emissive-intensity:1.1;transparent:true;opacity:0.9" position="0 0.036 0"></a-box>
+            <!-- Handle grip ridges -->
+            <a-box width="0.072" height="0.008" depth="0.072" color="#0c1e30" position="0 0.01 0"></a-box>
+            <a-box width="0.072" height="0.008" depth="0.072" color="#0c1e30" position="0 -0.01 0"></a-box>
+          </a-entity>
+          <!-- Console label -->
+          <a-text value="THROTTLE" position="0 -0.09 0.08" rotation="-70 0 0" align="center" color="#00d4ff" width="0.8" font="mozillavr"></a-text>
+          <!-- Mini gauge -->
+          <a-sphere radius="0.02" color="#00ff88" material="emissive:#00ff88;emissive-intensity:0.8" position="0 -0.06 0.05"></a-sphere>
+        </a-entity>
+
+        <!-- RIGHT SIDE MINI CONSOLE -->
+        <a-entity position="0.66 -0.1 0.18">
+          <a-box width="0.18" height="0.22" depth="0.3" color="#040c18"
+            material="roughness:0.85;metalness:0.4;emissive:#020810;emissive-intensity:0.3"></a-box>
+          <!-- Buttons grid -->
+          <a-sphere radius="0.014" color="#00ffcc" material="emissive:#00ffcc;emissive-intensity:1" position="-0.04 0.04 0.1"></a-sphere>
+          <a-sphere radius="0.014" color="#ff4466" material="emissive:#ff4466;emissive-intensity:1" position="0 0.04 0.1"></a-sphere>
+          <a-sphere radius="0.014" color="#8844ff" material="emissive:#8844ff;emissive-intensity:1" position="0.04 0.04 0.1"></a-sphere>
+          <a-sphere radius="0.014" color="#ffaa00" material="emissive:#ffaa00;emissive-intensity:1" position="-0.04 0.0 0.1"></a-sphere>
+          <a-sphere radius="0.014" color="#00d4ff" material="emissive:#00d4ff;emissive-intensity:1" position="0 0.0 0.1"></a-sphere>
+          <a-sphere radius="0.014" color="#ff6644" material="emissive:#ff6644;emissive-intensity:1" position="0.04 0.0 0.1"></a-sphere>
+          <a-text value="WEAPONS" position="0 -0.09 0.12" rotation="-70 0 0" align="center" color="#ff4466" width="0.8" font="mozillavr"></a-text>
+        </a-entity>
+
+        <!-- Interior cockpit ambient light -->
+        <a-entity light="type:point;color:#0044aa;intensity:1.8;distance:1.5" position="0 0.15 -0.2"></a-entity>
+        <a-entity light="type:point;color:#00ffcc;intensity:0.6;distance:0.8" position="0 -0.1 -0.2"></a-entity>
+      </a-entity>
+
+      <!-- ═══════════════════════════════════════════════════════
+           COCKPIT FRAME — Structural pillars + windshield
+           ═══════════════════════════════════════════════════════ -->
+      <!-- A-pillar left -->
+      <a-box id="cp-left" visible="false" width="0.055" height="1.05" depth="0.055"
+        color="#060c18" material="roughness:0.8;metalness:0.55;emissive:#020810;emissive-intensity:0.4"
+        position="-1.02 0.08 -0.62"></a-box>
+      <!-- A-pillar right -->
+      <a-box id="cp-right" visible="false" width="0.055" height="1.05" depth="0.055"
+        color="#060c18" material="roughness:0.8;metalness:0.55;emissive:#020810;emissive-intensity:0.4"
+        position="1.02 0.08 -0.62"><  <!-- ═══════ SUN & PLANETS SYSTEM (Heliocentric Orbits around Sun) ═══════ -->
+  <a-entity position="0 0 -120">
+    <a-sphere id="sun" radius="18" src="#tex-sun" material="emissive:#ff8800;emissive-intensity:0.5" self-rot="speed:0.04" class="scannable" planet-scan="planet:sun">
+      <a-entity light="type:point;color:#fff5cc;intensity:3.2;distance:600;decay:1.5"></a-entity>
+    </a-sphere>
+    <a-sphere radius="20" color="#ff6600" material="transparent:true;opacity:0.1;blending:additive;depthWrite:false" self-rot="speed:0.02"></a-sphere>
+    <a-text value="SOL" position="0 21 0" align="center" color="#ffcc88" width="16" look-at-cam></a-text>
+
+    <!-- MERCURY — cratered, hot side/cold side shading -->
+    <a-entity orbit-anim="r:28;spd:0.09;off:1.0">
+      <a-sphere radius="1.1" src="#tex-mercury" segments-width="64" segments-height="64"
+        material="roughness:0.92;metalness:0.04;color:#c8b8a8"
+        class="scannable" planet-scan="planet:mercury" self-rot="speed:0.04"></a-sphere>
+      <!-- Dark craters overlay -->
+      <a-sphere radius="1.12" color="#553322" material="transparent:true;opacity:0.12;roughness:1;side:back"></a-sphere>
+      <a-text value="MERCURY" position="0 2.2 0" align="center" color="#c8b898" width="12" look-at-cam></a-text>
     </a-entity>
 
-    <!-- ── AMBIENT LIGHT ──────────────────────────────────────── -->
-    <a-entity light="type:ambient; color:#001428; intensity:0.4"></a-entity>
-
-    <!-- ── SUN ────────────────────────────────────────────────── -->
-    <a-entity position="0 0 -120">
-      <!-- Sun sphere -->
-      <a-sphere
-        id="sun"
-        radius="18"
-        src="#tex-sun"
-        class="scannable"
-        emissive="#ff8800"
-        emissive-intensity="0.6"
-        self-rotate="speed:0.05"
-      >
-        <!-- Sunlight point light -->
-        <a-entity light="type:point; color:#fff5cc; intensity:3.5; distance:600; decay:1.5"></a-entity>
-      </a-sphere>
-
-      <!-- Solar corona glow -->
-      <a-sphere radius="20" color="#ff6600" material="transparent:true; opacity:0.12; blending:additive; depthWrite:false;" self-rotate="speed:0.03"></a-sphere>
-      <a-sphere radius="22" color="#ffaa00" material="transparent:true; opacity:0.06; blending:additive; depthWrite:false;" self-rotate="speed:0.02"></a-sphere>
-
-      <!-- Lens flare text label -->
-      <a-text value="SOL" position="0 21 0" align="center" color="#ffcc88" width="15" font="mozillavr"></a-text>
+    <!-- VENUS — thick cloud swirl, sulphur yellow glow -->
+    <a-entity orbit-anim="r:38;spd:0.07;off:2.1">
+      <a-sphere radius="1.8" src="#tex-venus" segments-width="64" segments-height="64"
+        material="roughness:0.88;metalness:0.02;color:#d8c870"
+        class="scannable" planet-scan="planet:venus" self-rot="speed:0.018"
+        atmo-glow="color:#d4b840;opacity:0.22"></a-sphere>
+      <!-- Cloud layer -->
+      <a-sphere radius="1.92" color="#e8d890"
+        material="transparent:true;opacity:0.35;roughness:1;depthWrite:false"
+        self-rot="speed:-0.012"></a-sphere>
+      <!-- Outer atmospheric glow -->
+      <a-sphere radius="2.05" color="#c8a020"
+        material="transparent:true;opacity:0.08;blending:additive;depthWrite:false;side:back"></a-sphere>
+      <a-text value="VENUS" position="0 3.2 0" align="center" color="#e8cc60" width="14" look-at-cam></a-text>
     </a-entity>
 
-    <!-- ══════════════════════════════════════════════════════════
-         SOLAR SYSTEM PLANETS
-         ══════════════════════════════════════════════════════════ -->
-
-    <!-- ── MERCURY ──────────────────────────────────────────────── -->
-    <a-entity id="mercury-orbit" orbit="radius:28; speed:0.09; offset:1.0; tilt:0.1">
-      <a-sphere
-        id="mercury"
-        radius="0.8"
-        color="#a0998c"
-        class="scannable"
-        planet-scannable="planet:mercury"
-        self-rotate="speed:0.04"
-      >
-        <a-entity light="type:point; color:#888888; intensity:0.3; distance:5"></a-entity>
-      </a-sphere>
-    </a-entity>
-
-    <!-- ── VENUS ────────────────────────────────────────────────── -->
-    <a-entity id="venus-orbit" orbit="radius:38; speed:0.07; offset:2.1; tilt:0.2">
-      <a-sphere
-        id="venus"
-        radius="1.4"
-        src="#tex-venus"
-        class="scannable"
-        planet-scannable="planet:venus"
-        self-rotate="speed:0.025"
-        atmosphere="color:#e8c87a; opacity:0.2; scale:1.1"
-      >
-      </a-sphere>
-      <a-text value="VENUS" position="0 2.2 0" align="center" color="#e8c87a" width="8" font="mozillavr"></a-text>
-    </a-entity>
-
-    <!-- ── EARTH ────────────────────────────────────────────────── -->
-    <a-entity id="earth-orbit" orbit="radius:50; speed:0.055; offset:0.5; tilt:0.5">
-      <a-sphere
-        id="earth"
-        radius="1.8"
-        src="#tex-earth"
-        class="scannable"
-        planet-scannable="planet:earth"
-        self-rotate="speed:0.08"
-        atmosphere="color:#4488ff; opacity:0.18; scale:1.12"
-      >
-      </a-sphere>
+    <!-- EARTH — textured with cloud layer + atmosphere -->
+    <a-entity orbit-anim="r:50;spd:0.055;off:0.5">
+      <!-- Ground/ocean sphere -->
+      <a-sphere radius="2.2" src="#tex-earth" segments-width="72" segments-height="72"
+        material="roughness:0.75;metalness:0.04;color:#e8f0ff"
+        class="scannable" planet-scan="planet:earth" self-rot="speed:0.09"
+        atmo-glow="color:#4488ff;opacity:0.20"></a-sphere>
+      <!-- Cloud layer —slower rotation -->
+      <a-sphere radius="2.32" src="#tex-clouds" segments-width="48" segments-height="48"
+        material="transparent:true;opacity:0.48;roughness:1;depthWrite:false"
+        self-rot="speed:0.065"></a-sphere>
+      <!-- Atmospheric blue haze -->
+      <a-sphere radius="2.45" color="#2255ff"
+        material="transparent:true;opacity:0.07;blending:additive;depthWrite:false;side:back"></a-sphere>
+      <!-- City lights nightside glow (additive) -->
+      <a-sphere radius="2.21" color="#ffcc44"
+        material="transparent:true;opacity:0.03;blending:additive;depthWrite:false"></a-sphere>
       <!-- Moon -->
-      <a-entity orbit="radius:4; speed:0.4; offset:0; tilt:0.1">
-        <a-sphere
-          id="moon"
-          radius="0.5"
-          src="#tex-moon"
-          class="scannable"
-          planet-scannable="planet:moon"
-          self-rotate="speed:0.05"
-        ></a-sphere>
+      <a-entity orbit-anim="r:5.5;spd:0.38;off:0">
+        <a-sphere radius="0.6" src="#tex-moon" segments-width="48" segments-height="48"
+          material="roughness:0.98;metalness:0.01;color:#d0c8c0"
+          class="scannable" planet-scan="planet:moon" self-rot="speed:0.06"></a-sphere>
+        <!-- Moon dark maria regions -->
+        <a-sphere radius="0.61" color="#443322" material="transparent:true;opacity:0.1;side:back"></a-sphere>
       </a-entity>
-      <a-text value="EARTH" position="0 2.7 0" align="center" color="#88ccff" width="8" font="mozillavr"></a-text>
+      <a-text value="EARTH" position="0 3.8 0" align="center" color="#88ccff" width="14" look-at-cam></a-text>
     </a-entity>
 
-    <!-- ── MARS ─────────────────────────────────────────────────── -->
-    <a-entity id="mars-orbit" orbit="radius:65; speed:0.04; offset:1.8; tilt:0.3">
-      <a-sphere
-        id="mars"
-        radius="1.3"
-        src="#tex-mars"
-        class="scannable"
-        planet-scannable="planet:mars"
-        self-rotate="speed:0.07"
-        atmosphere="color:#cc4422; opacity:0.1; scale:1.08"
-      >
-      </a-sphere>
-      <!-- Alien ruins on Mars -->
-      <a-entity position="0 1.5 0">
-        <a-box
-          width="0.3" height="0.5" depth="0.3"
-          color="#886655"
-          class="interactable"
-          artifact-scannable="story:Ancient Martian monolith — predating recorded history by 2.3 billion years."
-          position="-0.3 0 0"
-        ></a-box>
-        <a-box
-          width="0.2" height="0.7" depth="0.2"
-          color="#997766"
-          class="interactable"
-          artifact-scannable="story:Remnant of an advanced energy conduit from a lost Martian civilization."
-          position="0.3 0 0"
-        ></a-box>
+    <!-- MARS — rust-red with polar ice cap -->
+    <a-entity orbit-anim="r:65;spd:0.04;off:1.8">
+      <a-sphere radius="1.65" src="#tex-mars" segments-width="64" segments-height="64"
+        material="roughness:0.94;metalness:0.02;color:#e8a888"
+        class="scannable" planet-scan="planet:mars" self-rot="speed:0.075"
+        atmo-glow="color:#cc5533;opacity:0.10"></a-sphere>
+      <!-- Polar ice cap north -->
+      <a-sphere radius="1.67" color="#f0f0ff"
+        material="transparent:true;opacity:0.55;roughness:1"
+        scale="0.28 0.18 0.28" position="0 1.67 0"></a-sphere>
+      <!-- Polar ice cap south -->
+      <a-sphere radius="1.67" color="#e8e8ff"
+        material="transparent:true;opacity:0.45;roughness:1"
+        scale="0.22 0.15 0.22" position="0 -1.67 0"></a-sphere>
+      <!-- Thin atmosphere dust glow -->
+      <a-sphere radius="1.8" color="#cc6633"
+        material="transparent:true;opacity:0.04;blending:additive;depthWrite:false;side:back"></a-sphere>
+      <!-- Monolith artifact -->
+      <a-entity position="0 1.8 0">
+        <a-box width="0.35" height="0.6" depth="0.35" color="#7a6655"
+          material="roughness:0.95;metalness:0.1"
+          class="interactable" artifact-scan="Ancient Martian monolith — predating history by 2.3 billion years." position="-0.4 0 0"></a-box>
+        <!-- Monolith glow -->
+        <a-box width="0.33" height="0.58" depth="0.33" color="#ff8844"
+          material="transparent:true;opacity:0.08;emissive:#ff8844;emissive-intensity:0.3;blending:additive"
+          position="-0.4 0 0"></a-box>
       </a-entity>
-      <a-text value="MARS" position="0 2.2 0" align="center" color="#ff8866" width="8" font="mozillavr"></a-text>
+      <a-text value="MARS" position="0 3.0 0" align="center" color="#ff9966" width="14" look-at-cam></a-text>
     </a-entity>
 
-    <!-- ── ASTEROID BELT ─────────────────────────────────────────── -->
-    <a-entity id="asteroid-belt" position="0 0 0">
-      <!-- 30 procedural asteroids in a ring -->
-      <a-entity id="ast-gen"></a-entity>
+    <!-- JUPITER — gas bands with Great Red Spot glow -->
+    <a-entity orbit-anim="r:100;spd:0.022;off:3.5">
+      <a-sphere radius="6.5" src="#tex-jupiter" segments-width="80" segments-height="80"
+        material="roughness:0.7;metalness:0.02;color:#e8d8b8"
+        class="scannable" planet-scan="planet:jupiter" self-rot="speed:0.22"></a-sphere>
+      <!-- Band accent glow (equatorial) -->
+      <a-sphere radius="6.52" color="#aa7744" material="transparent:true;opacity:0.05;blending:additive;depthWrite:false"></a-sphere>
+      <!-- Great Red Spot highlight -->
+      <a-sphere radius="6.54" color="#cc3322"
+        material="transparent:true;opacity:0.08;blending:additive;depthWrite:false"
+        scale="0.25 0.12 0.25" position="2.6 -0.8 5.8"></a-sphere>
+      <!-- Outer haze -->
+      <a-sphere radius="6.8" color="#d4b888"
+        material="transparent:true;opacity:0.03;blending:additive;depthWrite:false;side:back"></a-sphere>
+      <a-text value="JUPITER" position="0 10 0" align="center" color="#e8cc88" width="22" look-at-cam></a-text>
     </a-entity>
 
-    <!-- ── JUPITER ───────────────────────────────────────────────── -->
-    <a-entity id="jupiter-orbit" orbit="radius:100; speed:0.022; offset:3.5; tilt:0.1">
-      <a-sphere
-        id="jupiter"
-        radius="5.5"
-        src="#tex-jupiter"
-        class="scannable"
-        planet-scannable="planet:jupiter"
-        self-rotate="speed:0.18"
-        atmosphere="color:#e8b86a; opacity:0.12; scale:1.06"
-      >
-      </a-sphere>
-      <!-- Great Red Spot indicator -->
-      <a-text value="JUPITER" position="0 7 0" align="center" color="#e8c88a" width="10" font="mozillavr"></a-text>
+    <!-- SATURN — multi-layer photorealistic rings -->
+    <a-entity orbit-anim="r:140;spd:0.016;off:1.2">
+      <a-sphere radius="5.5" src="#tex-saturn" segments-width="72" segments-height="72"
+        material="roughness:0.78;metalness:0.03;color:#e8d8b0"
+        class="scannable" planet-scan="planet:saturn" self-rot="speed:0.16"></a-sphere>
+      <!-- Polar hexagon tint -->
+      <a-sphere radius="5.52" color="#8899bb"
+        material="transparent:true;opacity:0.08;depthWrite:false"
+        scale="0.4 0.22 0.4" position="0 5.5 0"></a-sphere>
+      <!-- Ring system — B ring (brightest) -->
+      <a-torus radius="9.2" radius-tubular="3.2" arc="360" segments-radial="120" segments-tubular="6"
+        color="#d4c09a" material="transparent:true;opacity:0.72;roughness:0.95;side:double"
+        rotation="-20 0 0"></a-torus>
+      <!-- Ring system — A ring (outer) -->
+      <a-torus radius="12.5" radius-tubular="1.6" arc="360" segments-radial="100" segments-tubular="5"
+        color="#b89c7c" material="transparent:true;opacity:0.55;roughness:0.98;side:double"
+        rotation="-20 0 0"></a-torus>
+      <!-- Cassini division (dark gap) -->
+      <a-torus radius="11.0" radius-tubular="0.5" arc="360" segments-radial="80" segments-tubular="4"
+        color="#080e18" material="transparent:true;opacity:0.65;roughness:1;side:double"
+        rotation="-20 0 0"></a-torus>
+      <!-- C ring (inner, faint) -->
+      <a-torus radius="6.8" radius-tubular="1.1" arc="360" segments-radial="80" segments-tubular="4"
+        color="#aa9070" material="transparent:true;opacity:0.28;roughness:1;side:double"
+        rotation="-20 0 0"></a-torus>
+      <!-- Ring glow (backlit sunlight) -->
+      <a-torus radius="9.2" radius-tubular="3.5" arc="360" segments-radial="60" segments-tubular="4"
+        color="#ffe0a0" material="transparent:true;opacity:0.04;blending:additive;depthWrite:false;side:double"
+        rotation="-20 0 0"></a-torus>
+      <a-text value="SATURN" position="0 10 0" align="center" color="#e8d090" width="22" look-at-cam></a-text>
     </a-entity>
 
-    <!-- ── SATURN ─────────────────────────────────────────────────── -->
-    <a-entity id="saturn-orbit" orbit="radius:140; speed:0.016; offset:1.2; tilt:0.4">
-      <a-sphere
-        id="saturn"
-        radius="4.5"
-        src="#tex-saturn"
-        class="scannable"
-        planet-scannable="planet:saturn"
-        self-rotate="speed:0.14"
-      >
-      </a-sphere>
-      <!-- Saturn's rings -->
-      <a-torus
-        radius="7"
-        radius-tubular="3"
-        arc="360"
-        segments-tubular="80"
-        color="#c8aa88"
-        rotation="-15 0 0"
-        material="transparent:true; opacity:0.55; side:double"
-        self-rotate="speed:0.03"
-      ></a-torus>
-      <a-torus
-        radius="8.5"
-        radius-tubular="1.2"
-        arc="360"
-        segments-tubular="80"
-        color="#a89878"
-        rotation="-15 0 0"
-        material="transparent:true; opacity:0.35; side:double"
-        self-rotate="speed:0.025"
-      ></a-torus>
-      <a-text value="SATURN" position="0 7 0" align="center" color="#ddc8a0" width="10" font="mozillavr"></a-text>
+    <!-- URANUS — tilted icy aquamarine with faint rings -->
+    <a-entity orbit-anim="r:185;spd:0.011;off:2.7">
+      <a-sphere radius="3.8" color="#78d0c8" segments-width="56" segments-height="56"
+        material="roughness:0.82;metalness:0.02;color:#88ddd5"
+        class="scannable" planet-scan="planet:uranus" self-rot="speed:0.1"
+        atmo-glow="color:#66d8d0;opacity:0.16"></a-sphere>
+      <!-- Methane atmosphere -->
+      <a-sphere radius="3.95" color="#55c8c0"
+        material="transparent:true;opacity:0.1;blending:additive;depthWrite:false;side:back"></a-sphere>
+      <!-- Uranus rings (tilted) -->
+      <a-torus radius="5.5" radius-tubular="0.18" arc="360" segments-radial="80" segments-tubular="4"
+        color="#aacccc" material="transparent:true;opacity:0.45;side:double"
+        rotation="0 0 98"></a-torus>
+      <a-torus radius="6.2" radius-tubular="0.12" arc="360" segments-radial="80" segments-tubular="4"
+        color="#88bbbb" material="transparent:true;opacity:0.3;side:double"
+        rotation="0 0 98"></a-torus>
+      <a-text value="URANUS" position="0 7 0" align="center" color="#88ddd0" width="18" look-at-cam></a-text>
     </a-entity>
 
-    <!-- ── URANUS ─────────────────────────────────────────────────── -->
-    <a-entity id="uranus-orbit" orbit="radius:185; speed:0.011; offset:2.7; tilt:1.7">
-      <a-sphere
-        id="uranus"
-        radius="3.2"
-        color="#88e0d8"
-        class="scannable"
-        planet-scannable="planet:uranus"
-        self-rotate="speed:0.09; axis:z"
-        atmosphere="color:#88e8e0; opacity:0.14; scale:1.08"
-      >
-      </a-sphere>
-      <a-torus
-        radius="4.5"
-        radius-tubular="0.6"
-        arc="360"
-        segments-tubular="60"
-        color="#aaeee8"
-        rotation="0 0 80"
-        material="transparent:true; opacity:0.3; side:double"
-      ></a-torus>
-      <a-text value="URANUS" position="0 5 0" align="center" color="#88e8d8" width="10" font="mozillavr"></a-text>
+    <!-- NEPTUNE — deep cobalt blue with storm bands -->
+    <a-entity orbit-anim="r:230;spd:0.008;off:0.8">
+      <a-sphere radius="3.6" src="#tex-neptune" segments-width="60" segments-height="60"
+        material="roughness:0.8;metalness:0.03;color:#aaccff"
+        class="scannable" planet-scan="planet:neptune" self-rot="speed:0.14"
+        atmo-glow="color:#2266ff;opacity:0.20"></a-sphere>
+      <!-- Dark storm spot glow -->
+      <a-sphere radius="3.62" color="#0033bb"
+        material="transparent:true;opacity:0.1;blending:additive;depthWrite:false"
+        scale="0.2 0.1 0.2" position="1.4 -0.8 3.2"></a-sphere>
+      <!-- Outer methane haze -->
+      <a-sphere radius="3.85" color="#1144ff"
+        material="transparent:true;opacity:0.06;blending:additive;depthWrite:false;side:back"></a-sphere>
+      <a-text value="NEPTUNE" position="0 7 0" align="center" color="#6699ff" width="18" look-at-cam></a-text>
     </a-entity>
+  </a-entity>otation="-20 0 0"></a-torus>
+    <!-- Ring system — A ring (outer) -->
+    <a-torus radius="12.5" radius-tubular="1.6" arc="360" segments-radial="100" segments-tubular="5"
+      color="#b89c7c" material="transparent:true;opacity:0.55;roughness:0.98;side:double"
+      rotation="-20 0 0"></a-torus>
+    <!-- Cassini division (dark gap) -->
+    <a-torus radius="11.0" radius-tubular="0.5" arc="360" segments-radial="80" segments-tubular="4"
+      color="#080e18" material="transparent:true;opacity:0.65;roughness:1;side:double"
+      rotation="-20 0 0"></a-torus>
+    <!-- C ring (inner, faint) -->
+    <a-torus radius="6.8" radius-tubular="1.1" arc="360" segments-radial="80" segments-tubular="4"
+      color="#aa9070" material="transparent:true;opacity:0.28;roughness:1;side:double"
+      rotation="-20 0 0"></a-torus>
+    <!-- Ring glow (backlit sunlight) -->
+    <a-torus radius="9.2" radius-tubular="3.5" arc="360" segments-radial="60" segments-tubular="4"
+      color="#ffe0a0" material="transparent:true;opacity:0.04;blending:additive;depthWrite:false;side:double"
+      rotation="-20 0 0"></a-torus>
+    <a-text value="SATURN" position="0 8.5 0" align="center" color="#e8d090" width="11" font="mozillavr"></a-text>
+  </a-entity>
 
-    <!-- ── NEPTUNE ────────────────────────────────────────────────── -->
-    <a-entity id="neptune-orbit" orbit="radius:230; speed:0.008; offset:0.8; tilt:0.3">
-      <a-sphere
-        id="neptune"
-        radius="3.0"
-        src="#tex-neptune"
-        class="scannable"
-        planet-scannable="planet:neptune"
-        self-rotate="speed:0.12"
-        atmosphere="color:#3388ff; opacity:0.2; scale:1.1"
-      >
-      </a-sphere>
-      <a-text value="NEPTUNE" position="0 4.5 0" align="center" color="#6699ff" width="10" font="mozillavr"></a-text>
+  <!-- URANUS — tilted icy aquamarine with faint rings -->
+  <a-entity orbit-anim="r:185;spd:0.011;off:2.7">
+    <a-sphere radius="3.8" color="#78d0c8" segments-width="56" segments-height="56"
+      material="roughness:0.82;metalness:0.02;color:#88ddd5"
+      class="scannable" planet-scan="planet:uranus" self-rot="speed:0.1"
+      atmo-glow="color:#66d8d0;opacity:0.16"></a-sphere>
+    <!-- Methane atmosphere -->
+    <a-sphere radius="3.95" color="#55c8c0"
+      material="transparent:true;opacity:0.1;blending:additive;depthWrite:false;side:back"></a-sphere>
+    <!-- Uranus rings (tilted) -->
+    <a-torus radius="5.5" radius-tubular="0.18" arc="360" segments-radial="80" segments-tubular="4"
+      color="#aacccc" material="transparent:true;opacity:0.45;side:double"
+      rotation="0 0 98"></a-torus>
+    <a-torus radius="6.2" radius-tubular="0.12" arc="360" segments-radial="80" segments-tubular="4"
+      color="#88bbbb" material="transparent:true;opacity:0.3;side:double"
+      rotation="0 0 98"></a-torus>
+    <a-text value="URANUS" position="0 5.5 0" align="center" color="#88ddd0" width="10" font="mozillavr"></a-text>
+  </a-entity>
+
+  <!-- NEPTUNE — deep cobalt blue with storm bands -->
+  <a-entity orbit-anim="r:230;spd:0.008;off:0.8">
+    <a-sphere radius="3.6" src="#tex-neptune" segments-width="60" segments-height="60"
+      material="roughness:0.8;metalness:0.03;color:#aaccff"
+      class="scannable" planet-scan="planet:neptune" self-rot="speed:0.14"
+      atmo-glow="color:#2266ff;opacity:0.20"></a-sphere>
+    <!-- Dark storm spot glow -->
+    <a-sphere radius="3.62" color="#0033bb"
+      material="transparent:true;opacity:0.1;blending:additive;depthWrite:false"
+      scale="0.2 0.1 0.2" position="1.4 -0.8 3.2"></a-sphere>
+    <!-- Outer methane haze -->
+    <a-sphere radius="3.85" color="#1144ff"
+      material="transparent:true;opacity:0.06;blending:additive;depthWrite:false;side:back"></a-sphere>
+    <a-text value="NEPTUNE" position="0 5.2 0" align="center" color="#6699ff" width="10" font="mozillavr"></a-text>
+  </a-entity>
+
+  <!-- ═══════ WORMHOLE ═══════ -->
+  <a-entity position="80 15 -180">
+    <a-torus radius="6" radius-tubular="0.3" arc="360" segments-tubular="80" color="#8855ff" material="transparent:true;opacity:0.8;blending:additive;emissive:#8855ff;emissive-intensity:0.8" worm-spin="spd:1.2" class="interactable" wormhole-enter></a-torus>
+    <a-torus radius="5.4" radius-tubular="0.2" arc="360" segments-tubular="80" color="#aa77ff" material="transparent:true;opacity:0.5;blending:additive" worm-spin="spd:-0.8"></a-torus>
+    <a-sphere radius="4.2" color="#110022" material="transparent:true;opacity:0.95"></a-sphere>
+    <a-entity light="type:point;color:#9966ff;intensity:2;distance:40"></a-entity>
+    <a-text value="WORMHOLE&#10;[CLICK]" position="0 8 0" align="center" color="#cc99ff" width="9" font="mozillavr"></a-text>
+  </a-entity>
+
+  <!-- ═══════ BLACK HOLE ═══════ -->
+  <a-entity id="bh" position="-120 -20 -300" bh-effect>
+    <a-torus radius="12" radius-tubular="4" arc="360" segments-tubular="120" color="#ff6600" material="transparent:true;opacity:0.65;emissive:#ff4400;emissive-intensity:0.5;blending:additive;depthWrite:false" rotation="70 0 0" self-rot="speed:0.3"></a-torus>
+    <a-sphere radius="7" color="#000000"></a-sphere>
+    <a-entity light="type:point;color:#ff6600;intensity:1.4;distance:80"></a-entity>
+    <a-text value="BLACK HOLE" position="0 16 0" align="center" color="#ff8844" width="12" font="mozillavr"></a-text>
+  </a-entity>
+
+  <!-- ═══════ ALIEN WORLD ═══════ -->
+  <a-entity position="-60 -5 -180">
+    <a-sphere radius="4" color="#336644" class="scannable" planet-scan="planet:alien" self-rot="speed:0.06" atmo-glow="color:#44ff88;opacity:0.18"></a-sphere>
+    <a-entity position="0 4.2 0">
+      <a-cone height="1.5" radius-bottom="1" radius-top="0" color="#2a8844" class="interactable" artifact-scan="Zyx'ari energy pyramid — active for 1.4 billion years." animation="property:rotation;to:0 360 0;dur:20000;loop:true;easing:linear"></a-cone>
+      <a-box width="0.2" height="0.4" depth="0.2" color="#00ff88" material="transparent:true;opacity:0.8;emissive:#00ff88;emissive-intensity:0.5;blending:additive" position="0 1.5 0" animation="property:position;from:0 1.5 0;to:0 1.8 0;dur:2000;loop:true;dir:alternate;easing:easeInOutSine" class="collectible" collectible></a-box>
     </a-entity>
+    <a-text value="ALIEN WORLD" position="0 5.5 0" align="center" color="#44ff88" width="10" font="mozillavr"></a-text>
+  </a-entity>
 
-    <!-- ══════════════════════════════════════════════════════════
-         DEEP SPACE FEATURES
-         ══════════════════════════════════════════════════════════ -->
+  <!-- ═══════ NEBULAE ═══════ -->
+  <a-entity position="150 30 -250"><a-sphere radius="45" color="#ff4488" material="transparent:true;opacity:0.055;blending:additive;depthWrite:false;side:back"></a-sphere><a-entity light="type:point;color:#ff4488;intensity:0.9;distance:100"></a-entity></a-entity>
+  <a-entity position="-200 10 -280"><a-sphere radius="55" color="#0088ff" material="transparent:true;opacity:0.04;blending:additive;depthWrite:false;side:back"></a-sphere><a-entity light="type:point;color:#0088ff;intensity:0.75;distance:120"></a-entity></a-entity>
+  <a-entity position="30 -60 -350"><a-sphere radius="60" color="#8833cc" material="transparent:true;opacity:0.045;blending:additive;depthWrite:false;side:back"></a-sphere></a-entity>
 
-    <!-- ── WORMHOLE ───────────────────────────────────────────────── -->
-    <a-entity id="wormhole" position="80 15 -180">
-      <!-- Outer rings -->
-      <a-torus
-        radius="6" radius-tubular="0.3" arc="360" segments-tubular="80"
-        color="#8855ff"
-        material="transparent:true; opacity:0.8; blending:additive; emissive:#8855ff; emissive-intensity:0.8"
-        wormhole-spin="speed:1.2"
-        class="interactable"
-        wormhole-enter
-      ></a-torus>
-      <a-torus
-        radius="5.4" radius-tubular="0.2" arc="360" segments-tubular="80"
-        color="#aa77ff"
-        material="transparent:true; opacity:0.6; blending:additive; emissive:#aa77ff; emissive-intensity:0.6"
-        wormhole-spin="speed:-0.8"
-      ></a-torus>
-      <a-torus
-        radius="4.6" radius-tubular="0.15" arc="360" segments-tubular="60"
-        color="#cc99ff"
-        material="transparent:true; opacity:0.4; blending:additive"
-        wormhole-spin="speed:2.0"
-      ></a-torus>
-      <!-- Core -->
-      <a-sphere
-        radius="4.2"
-        color="#110022"
-        material="transparent:true; opacity:0.95; emissive:#330055; emissive-intensity:0.3"
-      ></a-sphere>
-      <!-- Inner glow -->
-      <a-sphere
-        radius="3.8"
-        color="#6633bb"
-        material="transparent:true; opacity:0.4; blending:additive; depthWrite:false"
-        wormhole-spin="speed:0.5"
-      ></a-sphere>
-      <a-entity light="type:point; color:#9966ff; intensity:2; distance:40"></a-entity>
-      <a-text value="WORMHOLE" position="0 8 0" align="center" color="#cc99ff" width="10" font="mozillavr"></a-text>
-      <a-text value="[CLICK TO ENTER]" position="0 6.5 0" align="center" color="#9966cc" width="6" font="mozillavr"></a-text>
-    </a-entity>
+  <!-- ═══════ COLLECTIBLES ═══════ -->
+  <a-box width="0.3" height="0.3" depth="0.3" color="#aa8855" class="collectible" collectible position="10 2 -15" animation="property:rotation;to:0 360 0;dur:4000;loop:true;easing:linear"></a-box>
+  <a-box width="0.2" height="0.4" depth="0.2" color="#00ffcc" material="transparent:true;opacity:0.85;emissive:#00ffcc;emissive-intensity:0.4" class="collectible" collectible position="5 3 -12" animation="property:rotation;to:0 360 0;dur:3000;loop:true;easing:linear"></a-box>
 
-    <!-- ── BLACK HOLE ─────────────────────────────────────────────── -->
-    <a-entity id="black-hole" position="-120 -20 -300" blackhole-effect="warningDist:50">
-      <!-- Accretion disk -->
-      <a-torus
-        radius="12" radius-tubular="4" arc="360" segments-tubular="120"
-        color="#ff6600"
-        material="transparent:true; opacity:0.7; emissive:#ff4400; emissive-intensity:0.5; blending:additive; depthWrite:false"
-        rotation="70 0 0"
-        self-rotate="speed:0.3"
-      ></a-torus>
-      <a-torus
-        radius="9" radius-tubular="2" arc="360" segments-tubular="80"
-        color="#ffaa00"
-        material="transparent:true; opacity:0.5; emissive:#ff8800; emissive-intensity:0.4; blending:additive; depthWrite:false"
-        rotation="70 10 0"
-        self-rotate="speed:0.5"
-      ></a-torus>
-      <!-- Event horizon -->
-      <a-sphere radius="7" color="#000000" material="emissive:#000000; emissive-intensity:1"></a-sphere>
-      <!-- Inner glow -->
-      <a-sphere radius="7.5" color="#ff4400"
-        material="transparent:true; opacity:0.1; blending:additive; depthWrite:false"
-      ></a-sphere>
-      <a-entity light="type:point; color:#ff6600; intensity:1.5; distance:80"></a-entity>
-      <a-text value="BLACK HOLE" position="0 16 0" align="center" color="#ff8844" width="12" font="mozillavr"></a-text>
-    </a-entity>
+  <!-- ═══════ ASTEROID SPAWNER (flight mode only) ═══════ -->
+  <a-entity id="ast-spawner" asteroid-spawner visible="false"></a-entity>
 
-    <!-- ── NEBULAE ──────────────────────────────────────────────────── -->
-    <!-- Nebula 1 — red giant remnant -->
-    <a-entity position="150 30 -250">
-      <a-sphere radius="45" color="#ff4488"
-        material="transparent:true; opacity:0.06; blending:additive; depthWrite:false; side:back"
-      ></a-sphere>
-      <a-sphere radius="38" color="#ff8844"
-        material="transparent:true; opacity:0.04; blending:additive; depthWrite:false; side:back"
-      ></a-sphere>
-      <a-sphere radius="30" color="#ffcc44"
-        material="transparent:true; opacity:0.03; blending:additive; depthWrite:false; side:back"
-      ></a-sphere>
-      <a-entity light="type:point; color:#ff4488; intensity:1; distance:100"></a-entity>
-    </a-entity>
+  <!-- ═══════ STARS + DUST ═══════ -->
+  <a-entity lumina-stars></a-entity>
+  <a-entity space-dust></a-entity>
 
-    <!-- Nebula 2 — blue-green -->
-    <a-entity position="-200 10 -280">
-      <a-sphere radius="55" color="#0088ff"
-        material="transparent:true; opacity:0.05; blending:additive; depthWrite:false; side:back"
-      ></a-sphere>
-      <a-sphere radius="42" color="#00ccff"
-        material="transparent:true; opacity:0.04; blending:additive; depthWrite:false; side:back"
-      ></a-sphere>
-      <a-sphere radius="32" color="#00ffaa"
-        material="transparent:true; opacity:0.035; blending:additive; depthWrite:false; side:back"
-      ></a-sphere>
-      <a-entity light="type:point; color:#0088ff; intensity:0.8; distance:120"></a-entity>
-    </a-entity>
+  <!-- ═══════ SKYBOX ═══════ -->
+  <a-sky src="#tex-sky" radius="900" rotation="0 -90 0" material="side:back;opacity:0.85"></a-sky>
 
-    <!-- Nebula 3 — purple eye -->
-    <a-entity position="30 -60 -350">
-      <a-sphere radius="60" color="#8833cc"
-        material="transparent:true; opacity:0.05; blending:additive; depthWrite:false; side:back"
-      ></a-sphere>
-      <a-sphere radius="48" color="#cc44ff"
-        material="transparent:true; opacity:0.04; blending:additive; depthWrite:false; side:back"
-      ></a-sphere>
-      <a-entity light="type:point; color:#aa44ff; intensity:0.7; distance:150"></a-entity>
-    </a-entity>
+</a-scene>
 
-    <!-- ── DISTANT GALAXIES ───────────────────────────────────────── -->
-    <a-entity position="300 50 -500">
-      <a-sphere radius="30" color="#ffc0a0"
-        material="transparent:true; opacity:0.06; blending:additive; depthWrite:false; side:back"
-      ></a-sphere>
-      <a-torus radius="20" radius-tubular="8" arc="360" segments-tubular="60"
-        color="#ff8855"
-        rotation="70 30 0"
-        material="transparent:true; opacity:0.07; blending:additive; depthWrite:false"
-        self-rotate="speed:0.01"
-      ></a-torus>
-    </a-entity>
+<!-- ═══════════════════════════════════════════════════════════════
+     COMBINED JAVASCRIPT
+═══════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
 
-    <!-- ── ALIEN CIVILIZATION — DISTANT PLANET + TEMPLES ─────────── -->
-    <a-entity id="alien-world" position="-60 -5 -180">
-      <!-- Alien world -->
-      <a-sphere
-        id="alien-planet"
-        radius="4"
-        color="#336644"
-        class="scannable"
-        planet-scannable="planet:neptune"
-        self-rotate="speed:0.06"
-        atmosphere="color:#44ff88; opacity:0.2; scale:1.1"
-      >
-      </a-sphere>
-      <!-- Temple structures -->
-      <a-entity position="0 4.2 0">
-        <!-- Main pyramid -->
-        <a-cone height="1.5" radius-bottom="1" radius-top="0" color="#2a8844"
-          class="interactable"
-          artifact-scannable="story:A crystalline energy pyramid from the Zyx'ari civilization — active for 1.4 billion years."
-          position="0 0 0"
-          animation="property:rotation; to:0 360 0; dur:20000; loop:true; easing:linear"
-        ></a-cone>
-        <!-- Side obelisks -->
-        <a-box width="0.2" height="1" depth="0.2" color="#1a6633"
-          class="interactable"
-          artifact-scannable="story:Zyx'ari communication obelisk broadcasting encoded signals across 4,000 light years."
-          position="-1.2 0 0"
-        ></a-box>
-        <a-box width="0.2" height="0.8" depth="0.2" color="#1a6633"
-          class="interactable"
-          artifact-scannable="story:Harmonic resonance pillar — still vibrating at 432 Hz after millennia."
-          position="1.2 0 0"
-        ></a-box>
-        <!-- Energy crystal above pyramid -->
-        <a-box width="0.2" height="0.5" depth="0.2" color="#00ff88"
-          material="transparent:true; opacity:0.8; emissive:#00ff88; emissive-intensity:0.6; blending:additive"
-          position="0 1.5 0"
-          animation="property:position; from:0 1.5 0; to:0 1.8 0; dur:2000; loop:true; dir:alternate; easing:easeInOutSine"
-          class="collectible-obj"
-          collectible="type:crystal; amount:2"
-        ></a-box>
-        <a-entity light="type:point; color:#00ff88; intensity:1.5; distance:8; position:0 1.5 0"></a-entity>
-      </a-entity>
-      <a-text value="ALIEN WORLD" position="0 5.5 0" align="center" color="#44ff88" width="10" font="mozillavr"></a-text>
-    </a-entity>
+/* ─── APP STATE ────────────────────────────────────────────── */
+const APP = {
+  mode: null, // 'explore' | 'flight'
 
-    <!-- ── COMETS ─────────────────────────────────────────────────── -->
-    <a-entity comet="speed:1.2; range:300" position="50 20 -80"></a-entity>
-    <a-entity comet="speed:0.9; range:250" position="-30 10 -120"></a-entity>
-    <a-entity comet="speed:1.5; range:350" position="100 -15 -60"></a-entity>
+  // Ship stats (shared)
+  fuel:100, oxygen:100, hull:100, shield:100,
+  // Explore stats
+  xp:0, level:1, credits:850, minerals:3, crystals:1,
+  // Flight stats
+  throttle:0, speed:0, score:0,
+  bankAngle:0, pitchAngle:0,
+  boost:false,
+  // VR
+  vrLeft:{x:0,y:0}, vrRight:{x:0,y:0}, vrBoost:false, vrBrake:false,
+  // Keys
+  keys:{},
+  // Upgrades
+  upgrades:{thrusters:1,scanner:1,fuelEff:0,shield:1,nav:0,ai:1,jetpack:0,radar:1},
+};
 
-    <!-- ── FLOATING COLLECTIBLE RESOURCES ──────────────────────────── -->
-    <!-- Minerals -->
-    <a-box width="0.3" height="0.3" depth="0.3" color="#aa8855"
-      class="collectible-obj"
-      collectible="type:mineral; amount:1"
-      position="10 2 -15"
-      animation="property:rotation; to:0 360 0; dur:4000; loop:true; easing:linear"
-    ></a-box>
-    <a-box width="0.25" height="0.25" depth="0.25" color="#cc9966"
-      class="collectible-obj"
-      collectible="type:mineral; amount:1"
-      position="-8 1 -20"
-      animation="property:rotation; to:0 360 0; dur:5000; loop:true; easing:linear"
-    ></a-box>
-    <!-- Crystals -->
-    <a-box width="0.2" height="0.4" depth="0.2" color="#00ffcc"
-      material="transparent:true; opacity:0.85; emissive:#00ffcc; emissive-intensity:0.5"
-      class="collectible-obj"
-      collectible="type:crystal; amount:1"
-      position="5 3 -12"
-      animation="property:rotation; to:0 360 0; dur:3000; loop:true; easing:linear"
-    ></a-box>
-    <!-- Dark matter canister -->
-    <a-cylinder radius="0.15" height="0.4" color="#220033"
-      material="emissive:#9900ff; emissive-intensity:0.4; transparent:true; opacity:0.9"
-      class="collectible-obj"
-      collectible="type:mineral; amount:3"
-      position="-12 4 -25"
-      animation="property:rotation; to:0 360 0; dur:6000; loop:true; easing:linear"
-    ></a-cylinder>
+/* ─── PLANET DATA ──────────────────────────────────────────── */
+const PLANETS = {
+  mercury:{name:'MERCURY',icon:'☿',temp:'-180°C to 430°C',atmo:'None',grav:'3.7 m/s²',diam:'4,879 km',dist:'57.9M km',fact:'Mercury has no atmosphere — so temperature swings are extreme.'},
+  venus:  {name:'VENUS',icon:'♀',temp:'465°C',atmo:'CO₂, N₂',grav:'8.87 m/s²',diam:'12,104 km',dist:'108.2M km',fact:'Venus is the hottest planet despite not being closest to the Sun.'},
+  earth:  {name:'EARTH',icon:'🌍',temp:'15°C avg',atmo:'N₂, O₂',grav:'9.81 m/s²',diam:'12,742 km',dist:'149.6M km',fact:'71% of Earth\'s surface is covered by water.'},
+  moon:   {name:'THE MOON',icon:'🌙',temp:'-173°C to 127°C',atmo:'Trace',grav:'1.62 m/s²',diam:'3,474 km',dist:'384,400 km',fact:'The Moon is drifting away from Earth at ~3.8 cm/year.'},
+  mars:   {name:'MARS',icon:'♂',temp:'-63°C avg',atmo:'CO₂',grav:'3.72 m/s²',diam:'6,779 km',dist:'227.9M km',fact:'Mars has the tallest volcano in the solar system: Olympus Mons.'},
+  jupiter:{name:'JUPITER',icon:'♃',temp:'-108°C',atmo:'H₂, He',grav:'24.8 m/s²',diam:'139,820 km',dist:'778.5M km',fact:'Jupiter\'s Great Red Spot has raged for over 350 years.'},
+  saturn: {name:'SATURN',icon:'♄',temp:'-138°C',atmo:'H₂, He',grav:'10.4 m/s²',diam:'116,460 km',dist:'1.43B km',fact:'Saturn\'s rings span 282,000 km — made mostly of ice and rock.'},
+  uranus: {name:'URANUS',icon:'⛢',temp:'-197°C',atmo:'H₂, He, CH₄',grav:'8.87 m/s²',diam:'50,724 km',dist:'2.87B km',fact:'Uranus rotates on its side with an axial tilt of 97.77°.'},
+  neptune:{name:'NEPTUNE',icon:'♆',temp:'-201°C',atmo:'H₂, He, CH₄',grav:'11.15 m/s²',diam:'49,244 km',dist:'4.5B km',fact:'Neptune has the fastest winds in the solar system — 2,100 km/h!'},
+  alien:  {name:'ALIEN WORLD',icon:'👽',temp:'Unknown',atmo:'Exotic',grav:'Unknown',diam:'~14,000 km',dist:'4.2 ly',fact:'Signs of ancient Zyx\'ari civilization detected. Holographic records intact.'},
+  sun:    {name:'SOL',icon:'☀',temp:'5,500°C surface',atmo:'H, He plasma',grav:'274 m/s²',diam:'1,392,700 km',dist:'0',fact:'The Sun accounts for 99.86% of all mass in our solar system.'},
+};
 
-    <!-- ── DAMAGED SATELLITE ─────────────────────────────────────── -->
-    <a-entity id="satellite" position="15 8 -30">
-      <!-- Body -->
-      <a-box width="0.6" height="0.4" depth="0.3" color="#556677"
-        class="interactable"
-        artifact-scannable="story:Communications satellite — damaged solar array. Repair required to restore signal to Earth."
-        animation="property:rotation; to:5 360 15; dur:8000; loop:true; easing:linear"
-      >
-        <!-- Solar panels (broken) -->
-        <a-box width="1.2" height="0.05" depth="0.4" color="#334455"
-          position="-0.9 0 0"
-          rotation="0 0 20"
-        ></a-box>
-        <a-box width="0.8" height="0.05" depth="0.4" color="#334455"
-          position="0.7 0 0"
-          rotation="0 0 -10"
-        ></a-box>
-        <!-- Antenna -->
-        <a-cylinder radius="0.02" height="0.5" color="#889988"
-          position="0 0.35 0"
-        ></a-cylinder>
-        <a-sphere radius="0.05" color="#00ffcc"
-          material="emissive:#00ffcc; emissive-intensity:0.8"
-          position="0 0.6 0"
-          animation="property:material.opacity; from:1; to:0.2; dur:800; loop:true; dir:alternate"
-        ></a-sphere>
-      </a-box>
-    </a-entity>
+const NOVA_MSGS = [
+  'Welcome aboard LUMINA. All systems are fully operational, Commander.',
+  'Unknown anomaly detected on long-range scanners.',
+  'Fascinating — gravitational readings suggest a dense metallic core.',
+  'Excellent discovery, Commander. This data advances our research.',
+  'Warning: radiation levels increasing. Recommend raising shields.',
+  'Alien beacon signature detected! Shall we investigate?',
+  'Fuel reserves at 60%. Consider refueling before deep-space transit.',
+  'Asteroid field ahead. Reducing speed recommended.',
+  'Wormhole signature detected! This could take us to a new galaxy.',
+  'These ruins suggest an advanced ancient civilization.',
+  'Boost system charged. Engage when ready, Commander.',
+  'Outstanding piloting. Your skills are remarkable, Commander.',
+];
 
-    <!-- ── SPACE DEBRIS ───────────────────────────────────────────── -->
-    <a-box width="0.4" height="0.3" depth="0.2" color="#445566"
-      position="20 5 -40"
-      asteroid-drift="speed:0.005"
-    ></a-box>
-    <a-box width="0.25" height="0.2" depth="0.35" color="#556677"
-      position="-15 3 -35"
-      asteroid-drift="speed:0.007"
-    ></a-box>
-    <a-cylinder radius="0.15" height="0.5" color="#334455"
-      position="8 -2 -28"
-      asteroid-drift="speed:0.004"
-    ></a-cylinder>
+/* ─── CLOCK ────────────────────────────────────────────────── */
+function tick_clk(){
+  const n=new Date();const p=v=>String(v).padStart(2,'0');
+  const t=`${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;
+  document.querySelectorAll('#exp-clock,#flt-clock').forEach(el=>el.textContent=t);
+}
+setInterval(tick_clk,1000);tick_clk();
 
-    <!-- ── PROCEDURAL STARS ─────────────────────────────────────── -->
-    <a-entity starfield="count:4000; radius:450"></a-entity>
+/* ─── NOVA ─────────────────────────────────────────────────── */
+let _novaTmr=null, _novaIdx=0;
+function speakNova(txt){
+  const msg=txt||NOVA_MSGS[_novaIdx++%NOVA_MSGS.length];
+  // Explore NOVA
+  const ep=document.getElementById('nova-panel');
+  const et=document.getElementById('nova-text');
+  if(ep&&et&&APP.mode==='explore'){et.textContent=`"${msg}"`;ep.classList.remove('hidden');clearTimeout(_novaTmr);_novaTmr=setTimeout(()=>ep.classList.add('hidden'),6000)}
+  // Flight NOVA
+  const fp=document.getElementById('nova-msg');
+  const ft=document.getElementById('nova-txt');
+  if(fp&&ft&&APP.mode==='flight'){ft.textContent=`"${msg}"`;fp.classList.remove('hide');clearTimeout(_novaTmr);_novaTmr=setTimeout(()=>fp.classList.add('hide'),5500)}
+}
 
-    <!-- ── SPACE DUST ──────────────────────────────────────────── -->
-    <a-entity space-dust="count:600"></a-entity>
+/* ─── NOTIFICATIONS ────────────────────────────────────────── */
+function notify(msg,type=''){
+  const c=document.getElementById('notif-c');if(!c)return;
+  const el=document.createElement('div');el.className=`notif ${type}`;el.textContent=msg;
+  c.appendChild(el);setTimeout(()=>el.remove(),4200);
+}
 
-    <!-- ══════════════════════════════════════════════════════════
-         COCKPIT (stationary HUD mesh, visible only in headset)
-         ══════════════════════════════════════════════════════════ -->
-    <!-- The cockpit frame is visible in the scene but the HUD overlay
-         handles actual status. The 3D cockpit adds presence in VR. -->
-    <a-entity id="cockpit" position="0 0 0">
+/* ─── PLANET SCANNER ───────────────────────────────────────── */
+function showScanner(key){
+  const d=PLANETS[key];if(!d)return;
+  const p=document.getElementById('planet-scanner');if(!p)return;
+  document.getElementById('sc-pname').textContent=d.name;
+  document.getElementById('sc-icon').textContent=d.icon;
+  document.getElementById('sc-temp').textContent=d.temp;
+  document.getElementById('sc-atmo').textContent=d.atmo;
+  document.getElementById('sc-grav').textContent=d.grav;
+  document.getElementById('sc-diam').textContent=d.diam;
+  document.getElementById('sc-dist').textContent=d.dist;
+  document.getElementById('sc-fact').textContent=d.fact;
+  p.classList.remove('hidden');
+  clearTimeout(showScanner._t);
+  showScanner._t=setTimeout(()=>p.classList.add('hidden'),8000);
+  gainXP(30);notify(`🔭 Planet scan: ${d.name}`,'ok');
+}
 
-      <!-- Instrument Panel bottom -->
-      <a-box
-        width="2.2" height="0.15" depth="0.7"
-        color="#0a1a2e"
-        position="0 -0.7 -1.1"
-        material="emissive:#001830; emissive-intensity:0.3"
-      ></a-box>
+/* ─── XP & RESOURCES ───────────────────────────────────────── */
+function gainXP(n){
+  APP.xp+=n;
+  if(APP.xp>=APP.level*1000){APP.level++;notify(`⬆ LEVEL UP — Level ${APP.level}!`,'ok');speakNova(`Level ${APP.level} reached, Commander!`)}
+  updateHUD();
+}
+function addCredits(n){APP.credits+=n;updateHUD()}
 
-      <!-- Dashboard glow strips -->
-      <a-box width="2" height="0.02" depth="0.01" color="#00d4ff"
-        material="emissive:#00d4ff; emissive-intensity:1; transparent:true; opacity:0.8; blending:additive"
-        position="0 -0.62 -0.78"
-      ></a-box>
-      <a-box width="2" height="0.02" depth="0.01" color="#0088ff"
-        material="emissive:#0088ff; emissive-intensity:0.8; transparent:true; opacity:0.6; blending:additive"
-        position="0 -0.66 -0.78"
-      ></a-box>
+/* ─── HUD UPDATE ───────────────────────────────────────────── */
+function updateHUD(){
+  if(APP.mode==='explore'){
+    const s=(id,v)=>{const el=document.getElementById(id);if(el)el.style.width=Math.max(0,v)+'%'};
+    const t=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=Math.round(v)+'%'};
+    s('e-fuel',APP.fuel);t('e-fv',APP.fuel);
+    s('e-oxy',APP.oxygen);t('e-ov',APP.oxygen);
+    s('e-hull',APP.hull);t('e-hv',APP.hull);
+    s('e-shld',APP.shield);t('e-sv',APP.shield);
+    const xpEl=document.getElementById('xp-f');if(xpEl)xpEl.style.width=((APP.xp%1000)/10)+'%';
+    const xpL=document.getElementById('xp-l');if(xpL)xpL.textContent=`LVL ${APP.level} · ${APP.xp%1000}/1000 XP`;
+    const cr=document.getElementById('e-cr');if(cr)cr.textContent=APP.credits;
+    const vEl=document.getElementById('e-vel');if(vEl)vEl.textContent=Math.round(APP.speed);
+  }
+  if(APP.mode==='flight'){
+    const s=(id,v)=>{const el=document.getElementById(id);if(el)el.style.width=Math.max(0,v)+'%'};
+    const t=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=Math.round(v)+'%'};
+    s('f-fb',APP.fuel);t('f-fv',APP.fuel);
+    s('f-hb',APP.hull);t('f-hv',APP.hull);
+    s('f-sb',APP.shield);t('f-sv',APP.shield);
+    const pct=Math.round(APP.throttle*100);
+    const tf=document.getElementById('f-thr');if(tf)tf.textContent=pct;
+    const trf=document.getElementById('thr-fill');if(trf)trf.style.width=pct+'%';
+    const trp=document.getElementById('thr-pct');if(trp)trp.textContent=pct+'%';
+    const sf=document.getElementById('f-spd');if(sf)sf.textContent=Math.round(APP.speed);
+    const sc=document.getElementById('f-score');if(sc)sc.textContent=APP.score;
+    const tg=document.getElementById('thr-glow');if(tg)tg.style.opacity=0.2+APP.throttle*0.8;
+    // ADI
+    const inner=document.getElementById('adi-inner');
+    if(inner)inner.style.transform=`rotate(${-APP.bankAngle}deg) translateY(${APP.pitchAngle*0.5}px)`;
+  }
+}
 
-      <!-- Holographic displays (glowing planes) -->
-      <a-plane width="0.4" height="0.25" color="#001428"
-        position="-0.7 -0.5 -1.1"
-        rotation="-30 0 0"
-        material="transparent:true; opacity:0.85; emissive:#003366; emissive-intensity:0.5"
-      ></a-plane>
-      <a-plane width="0.5" height="0.3" color="#001428"
-        position="0 -0.48 -1.15"
-        rotation="-30 0 0"
-        material="transparent:true; opacity:0.85; emissive:#003355; emissive-intensity:0.6"
-      ></a-plane>
-      <a-plane width="0.4" height="0.25" color="#001428"
-        position="0.7 -0.5 -1.1"
-        rotation="-30 0 0"
-        material="transparent:true; opacity:0.85; emissive:#003366; emissive-intensity:0.5"
-      ></a-plane>
+/* ─── DANGER / BOOST FLASH ─────────────────────────────────── */
+function dangerFlash(){const el=document.getElementById('danger-flash');if(!el)return;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),200)}
+function boostFlash(){const el=document.getElementById('boost-flash');if(!el)return;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),400)}
 
-      <!-- Control column -->
-      <a-cylinder radius="0.04" height="0.3" color="#112233"
-        position="0 -0.55 -0.95"
-        rotation="20 0 0"
-        material="emissive:#002244; emissive-intensity:0.3"
-      ></a-cylinder>
-      <a-sphere radius="0.06" color="#0088ff"
-        position="0 -0.4 -0.92"
-        material="emissive:#00aaff; emissive-intensity:0.6"
-      ></a-sphere>
+/* ─── SCREEN SHAKE ─────────────────────────────────────────── */
+function screenShake(){
+  const r=document.getElementById('rig');if(!r)return;
+  const o=r.object3D.position.clone();let i=0;
+  const iv=setInterval(()=>{r.object3D.position.x=o.x+(Math.random()-.5)*.15;r.object3D.position.y=o.y+(Math.random()-.5)*.15;if(++i>8){r.object3D.position.copy(o);clearInterval(iv)}},40);
+}
 
-      <!-- Left armrest -->
-      <a-box width="0.25" height="0.06" depth="0.5" color="#0a1a2e"
-        position="-0.75 -0.62 -0.9"
-        material="emissive:#001128; emissive-intensity:0.2"
-      ></a-box>
+/* ─── UPGRADES ─────────────────────────────────────────────── */
+const UPG_COSTS={thrusters:200,scanner:150,fuelEff:120,shield:200,nav:100,ai:180,jetpack:250,radar:130};
+function buyUpg(sys){
+  const cost=UPG_COSTS[sys]||150;
+  if(APP.credits<cost){notify('⚠ Insufficient credits','warn');return}
+  if((APP.upgrades[sys]||0)>=5){notify('✅ Already at maximum level');return}
+  APP.credits-=cost;
+  APP.upgrades[sys]=(APP.upgrades[sys]||0)+1;
+  notify(`🚀 ${sys.toUpperCase()} upgraded to Level ${APP.upgrades[sys]}!`,'ok');
+  speakNova(`${sys} system upgraded. Performance enhanced.`);
+  gainXP(100);
+  // Update pips
+  const card=document.querySelector(`.upg-card[data-sys="${sys}"]`);
+  if(card){card.querySelectorAll('.upip').forEach((p,i)=>p.classList.toggle('on',i<APP.upgrades[sys]))}
+  document.getElementById('upg-cr').textContent=APP.credits;
+}
+window.buyUpg=buyUpg;
 
-      <!-- Right armrest -->
-      <a-box width="0.25" height="0.06" depth="0.5" color="#0a1a2e"
-        position="0.75 -0.62 -0.9"
-        material="emissive:#001128; emissive-intensity:0.2"
-      ></a-box>
+/* ─── KEYBOARD ─────────────────────────────────────────────── */
+document.addEventListener('keydown',e=>{
+  APP.keys[e.code]=true;
+  if(e.code==='KeyU'&&APP.mode==='explore')document.getElementById('upgrade-menu')?.classList.toggle('hidden');
+  if(e.code==='KeyN')speakNova();
+  if(e.code==='Escape')document.getElementById('upgrade-menu')?.classList.add('hidden');
+});
+document.addEventListener('keyup',e=>{APP.keys[e.code]=false});
 
-      <!-- Cockpit frame top -->
-      <a-entity position="0 0.6 -0.8">
-        <a-box width="2.5" height="0.05" depth="0.05" color="#0a1a2e"
-          material="emissive:#001830; emissive-intensity:0.2"
-        ></a-box>
-      </a-entity>
+/* ─── POINTER LOCK ─────────────────────────────────────────── */
+let pLocked=false;
+document.addEventListener('click',()=>{if(!document.pointerLockElement&&APP.mode)document.body.requestPointerLock()});
+document.addEventListener('pointerlockchange',()=>{pLocked=!!document.pointerLockElement});
+document.addEventListener('mousemove',e=>{
+  if(!pLocked||!APP.mode)return;
+  const r=document.getElementById('rig');if(!r)return;
+  const eu=new THREE.Euler().setFromQuaternion(r.object3D.quaternion,'YXZ');
+  eu.y-=THREE.MathUtils.degToRad(e.movementX*0.06);
+  eu.x-=THREE.MathUtils.degToRad(e.movementY*0.06);
+  eu.x=Math.max(THREE.MathUtils.degToRad(-60),Math.min(THREE.MathUtils.degToRad(60),eu.x));
+  r.object3D.quaternion.setFromEuler(eu);
+  APP.bankAngle=THREE.MathUtils.radToDeg(eu.z);
+  APP.pitchAngle=THREE.MathUtils.radToDeg(eu.x);
+});
 
-      <!-- Left pillar -->
-      <a-box width="0.06" height="1.4" depth="0.06" color="#0a1a2e"
-        position="-1.15 0 -0.75"
-        material="emissive:#001830; emissive-intensity:0.2"
-      ></a-box>
-      <!-- Right pillar -->
-      <a-box width="0.06" height="1.4" depth="0.06" color="#0a1a2e"
-        position="1.15 0 -0.75"
-        material="emissive:#001830; emissive-intensity:0.2"
-      ></a-box>
+/* ════════════════════════════════════════════════════════════
+   A-FRAME COMPONENTS
+════════════════════════════════════════════════════════════ */
 
-      <!-- LUMINA title display on dash -->
-      <a-text
-        value="LUMINA IMMERSIVE SPACE EXPLORATION"
-        position="0 -0.44 -1.14"
-        rotation="-30 0 0"
-        align="center"
-        color="#00d4ff"
-        width="1.8"
-        font="mozillavr"
-      ></a-text>
+/* Stars */
+AFRAME.registerComponent('lumina-stars',{
+  init(){
+    const geo=new THREE.BufferGeometry(),pos=[],col=[];
+    const pal=[[1,1,1],[.85,.9,1],[1,.95,.85],[.7,.85,1]];
+    for(let i=0;i<5000;i++){
+      const r=400,θ=Math.random()*Math.PI*2,φ=Math.acos(2*Math.random()-1);
+      pos.push(r*Math.sin(φ)*Math.cos(θ),r*Math.sin(φ)*Math.sin(θ),r*Math.cos(φ));
+      const c=pal[Math.floor(Math.random()*pal.length)];col.push(c[0],c[1],c[2]);
+    }
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+    const mat=new THREE.PointsMaterial({size:.85,sizeAttenuation:false,vertexColors:true,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false});
+    this.pts=new THREE.Points(geo,mat);this.el.object3D.add(this.pts);
+  },
+  tick(t){this.pts.rotation.y=t*.000008}
+});
 
-      <!-- Thruster status lights -->
-      <a-sphere radius="0.025" color="#00ff88"
-        material="emissive:#00ff88; emissive-intensity:1"
-        position="-0.6 -0.62 -0.78"
-        animation="property:material.opacity; from:1; to:0.3; dur:1500; loop:true; dir:alternate"
-      ></a-sphere>
-      <a-sphere radius="0.025" color="#00ff88"
-        material="emissive:#00ff88; emissive-intensity:1"
-        position="-0.5 -0.62 -0.78"
-        animation="property:material.opacity; from:0.3; to:1; dur:1500; loop:true; dir:alternate"
-      ></a-sphere>
-      <a-sphere radius="0.025" color="#ffaa00"
-        material="emissive:#ffaa00; emissive-intensity:1"
-        position="-0.4 -0.62 -0.78"
-        animation="property:material.opacity; from:1; to:0.4; dur:900; loop:true; dir:alternate"
-      ></a-sphere>
-      <a-sphere radius="0.025" color="#00d4ff"
-        material="emissive:#00d4ff; emissive-intensity:1"
-        position="0.4 -0.62 -0.78"
-      ></a-sphere>
-      <a-sphere radius="0.025" color="#00d4ff"
-        material="emissive:#00d4ff; emissive-intensity:1"
-        position="0.5 -0.62 -0.78"
-      ></a-sphere>
-      <a-sphere radius="0.025" color="#ff4444"
-        material="emissive:#ff4444; emissive-intensity:1"
-        position="0.6 -0.62 -0.78"
-        animation="property:material.opacity; from:1; to:0; dur:600; loop:true; dir:alternate"
-      ></a-sphere>
+/* Space dust */
+AFRAME.registerComponent('space-dust',{
+  init(){
+    const geo=new THREE.BufferGeometry(),pos=[];
+    for(let i=0;i<500;i++)pos.push((Math.random()-.5)*80,(Math.random()-.5)*80,(Math.random()-.5)*80);
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    const mat=new THREE.PointsMaterial({size:.045,color:new THREE.Color(.8,.9,1),transparent:true,opacity:.28,blending:THREE.AdditiveBlending,depthWrite:false});
+    this.dust=new THREE.Points(geo,mat);this.el.object3D.add(this.dust);
+    this.v=new THREE.Vector3(.002,.001,.003);
+  },
+  tick(){
+    this.dust.position.add(this.v);
+    if(Math.abs(this.dust.position.x)>40)this.v.x*=-1;
+    if(Math.abs(this.dust.position.y)>40)this.v.y*=-1;
+    if(Math.abs(this.dust.position.z)>40)this.v.z*=-1;
+  }
+});
 
-      <!-- Cockpit glow ambient -->
-      <a-entity light="type:point; color:#003366; intensity:0.8; distance:3" position="0 -0.3 -0.9"></a-entity>
-    </a-entity>
+/* Orbit animation */
+AFRAME.registerComponent('orbit-anim',{
+  schema:{r:{default:10},spd:{default:.1},off:{default:0},tilt:{default:0}},
+  init(){this.a=this.data.off},
+  tick(t,dt){
+    if(!APP.mode)return;
+    this.a+=(dt/1000)*this.data.spd;
+    this.el.object3D.position.set(
+      Math.cos(this.a)*this.data.r,
+      Math.sin(this.a)*this.data.tilt,
+      Math.sin(this.a)*this.data.r
+    );
+  }
+});
 
-    <!-- ── SKYBOX – Milky Way ─────────────────────────────────── -->
-    <a-sky src="#tex-sky" radius="900" rotation="0 -90 0" material="side:back"></a-sky>
+/* Self-rotate */
+AFRAME.registerComponent('self-rot',{
+  schema:{speed:{default:.2}},
+  tick(t,dt){this.el.object3D.rotation.y+=(dt/1000)*this.data.speed}
+});
 
-  </a-scene>
+/* Look at camera component to make text always readable */
+AFRAME.registerComponent('look-at-cam',{
+  tick(){
+    const cam=document.getElementById('cam');
+    if(cam){
+      const targetPos=new THREE.Vector3();
+      cam.object3D.getWorldPosition(targetPos);
+      this.el.object3D.lookAt(targetPos);
+    }
+  }
+});
 
-  <!-- ─── LUMINA Scripts ──────────────────────────────────────────── -->
-  <script src="lumina.js"></script>
+/* Atmosphere glow */
+AFRAME.registerComponent('atmo-glow',{
+  schema:{color:{type:'color',default:'#4488ff'},opacity:{default:.15}},
+  init(){
+    const r=parseFloat(this.el.getAttribute('radius')||1);
+    const geo=new THREE.SphereGeometry(r*1.12,32,32);
+    const mat=new THREE.MeshBasicMaterial({color:new THREE.Color(this.data.color),transparent:true,opacity:this.data.opacity,side:THREE.BackSide,blending:THREE.AdditiveBlending,depthWrite:false});
+    this.el.object3D.add(new THREE.Mesh(geo,mat));
+  }
+});
 
-  <!-- ─── Asteroid Belt Generator ───────────────────────────────── -->
-  <script>
-    /* Generate asteroid belt procedurally after DOM is ready */
-    document.addEventListener('DOMContentLoaded', () => {
-      const belt = document.getElementById('ast-gen');
-      if (!belt) return;
-      const beltCols = ['#8a8070', '#6a6560', '#7a7268', '#9a8880', '#5a5550'];
-      const innerR = 74, outerR = 86;
-      for (let i = 0; i < 45; i++) {
-        const r = innerR + Math.random() * (outerR - innerR);
-        const angle = Math.random() * Math.PI * 2;
-        const x = Math.cos(angle) * r;
-        const z = Math.sin(angle) * r;
-        const y = (Math.random() - 0.5) * 6;
-        const size = 0.15 + Math.random() * 0.6;
-        const col = beltCols[Math.floor(Math.random() * beltCols.length)];
+/* Wormhole spin */
+AFRAME.registerComponent('worm-spin',{
+  schema:{spd:{default:1.5}},
+  tick(t,dt){this.el.object3D.rotation.z+=(dt/1000)*this.data.spd}
+});
 
-        const ast = document.createElement('a-box');
-        ast.setAttribute('width', size);
-        ast.setAttribute('height', size * 0.7);
-        ast.setAttribute('depth', size * 0.85);
-        ast.setAttribute('color', col);
-        ast.setAttribute('position', `${x} ${y} ${z}`);
-        ast.setAttribute('rotation', `${Math.random()*360} ${Math.random()*360} ${Math.random()*360}`);
-        ast.setAttribute('asteroid-drift', `speed:${0.002 + Math.random() * 0.008}`);
-        belt.appendChild(ast);
-      }
-
-      /* Generate loading screen background stars */
-      const starsContainer = document.getElementById('loading-stars-container');
-      if (starsContainer) {
-        for (let i = 0; i < 150; i++) {
-          const s = document.createElement('div');
-          s.className = 'loading-star';
-          s.style.setProperty('--duration', (2 + Math.random() * 5) + 's');
-          s.style.left = Math.random() * 100 + '%';
-          s.style.top = Math.random() * 100 + '%';
-          s.style.opacity = Math.random() * 0.8 + 0.1;
-          starsContainer.appendChild(s);
-        }
-      }
+/* Wormhole enter */
+AFRAME.registerComponent('wormhole-enter',{
+  init(){
+    this.el.addEventListener('click',()=>{
+      const o=document.getElementById('galaxy-trans');
+      if(o){o.classList.add('active');notify('🌀 WORMHOLE ENGAGED — Jumping!','warn');speakNova('Wormhole traversal initiated. Prepare for inter-galactic jump.');gainXP(200);setTimeout(()=>{o.classList.remove('active');notify('✨ Arrived in new galaxy.','ok');speakNova('We have arrived in an uncharted galaxy, Commander.')},2500)}
     });
-  </script>
+  }
+});
 
+/* Black hole effect */
+AFRAME.registerComponent('bh-effect',{
+  tick(){
+    const cam=document.getElementById('cam');if(!cam)return;
+    const cp=cam.object3D.getWorldPosition(new THREE.Vector3());
+    const dist=cp.distanceTo(this.el.object3D.position);
+    const w=document.getElementById('bh-warn');
+    if(dist<50){
+      w&&w.classList.add('active');
+      if(!this._w){this._w=true;notify('☠ EVENT HORIZON APPROACHING!','danger');speakNova('Black hole gravity pulling us in — maximum thrust!');setTimeout(()=>{this._w=false},20000)}
+    }else{w&&w.classList.remove('active')}
+  }
+});
+
+/* Planet scanner (gaze) */
+AFRAME.registerComponent('planet-scan',{
+  schema:{planet:{type:'string',default:'earth'}},
+  init(){
+    this._start=null;
+    this.el.addEventListener('mouseenter',()=>{this._start=Date.now()});
+    this.el.addEventListener('mouseleave',()=>{this._start=null});
+    this.el.addEventListener('click',()=>showScanner(this.data.planet));
+  },
+  tick(){
+    if(this._start&&Date.now()-this._start>2000){showScanner(this.data.planet);this._start=null}
+  }
+});
+
+/* Artifact scanner */
+AFRAME.registerComponent('artifact-scan',{
+  schema:{default:'An ancient device.'},
+  init(){
+    this._busy=false;
+    this.el.addEventListener('click',()=>{
+      if(this._busy)return;this._busy=true;
+      notify('📡 Scanning artifact...','');
+      setTimeout(()=>{notify(`👽 ${this.schema.default}`,'ok');speakNova('Extraordinary. Ancient encrypted data detected.');gainXP(150);addCredits(50);this._busy=false},2000);
+    });
+  }
+});
+
+/* Collectible */
+AFRAME.registerComponent('collectible',{
+  init(){
+    this._done=false;
+    this.el.addEventListener('click',()=>{
+      if(this._done)return;this._done=true;
+      APP.crystals++;gainXP(40);addCredits(30);
+      notify('💎 Crystal collected!','ok');
+      const cam=document.getElementById('cam').object3D;
+      let p=0;const iv=setInterval(()=>{p+=.06;this.el.object3D.position.lerp(cam.position,.06);this.el.object3D.scale.setScalar(1-p);if(p>=1){clearInterval(iv);this.el.parentNode&&this.el.parentNode.removeChild(this.el)}},16);
+    });
+  },
+  tick(t){if(!this._done){this.el.object3D.rotation.y=t*.001}}
+});
+
+/* ── FLIGHT CONTROLLER ──────────────────────────────────── */
+AFRAME.registerComponent('flight-controller',{
+  init(){
+    this.euler=new THREE.Euler(0,0,0,'YXZ');
+    this._novaT=0;this._fuelT=0;
+  },
+  tick(t,dt){
+    if(dt>200||dt<=0||!APP.mode)return;
+    const dtS=dt/1000;
+    const k=APP.keys;
+    const kW=k.KeyW||k.ArrowUp,kS=k.KeyS||k.ArrowDown;
+    const kA=k.KeyA||k.ArrowLeft,kD=k.KeyD||k.ArrowRight;
+    const kQ=k.KeyQ,kE=k.KeyE;
+    const kSh=k.ShiftLeft||k.ShiftRight||APP.vrBoost;
+    const kSp=k.Space||APP.vrBrake;
+
+    if(APP.mode==='flight'){
+      // Throttle
+      let td=0;
+      if(kW)td+=.6*dtS;if(kS)td-=.6*dtS;
+      if(kSh)td+=1.2*dtS;if(kSp)td-=1.5*dtS;
+      td+=(-APP.vrRight.y)*0.5*dtS;
+      APP.throttle=Math.max(0,Math.min(1,APP.throttle+td));
+      APP.boost=!!(kSh||APP.vrBoost);
+      if(APP.boost)boostFlash();
+
+      // Rotation
+      const rollRate=70*dtS,pitchRate=50*dtS,yawRate=40*dtS;
+      let dR=0,dP=0,dY=0;
+      if(kA)dR-=rollRate;if(kD)dR+=rollRate;
+      if(kQ)dY-=yawRate;if(kE)dY+=yawRate;
+      dR+=APP.vrLeft.x*rollRate*1.2;
+      dP-=APP.vrLeft.y*pitchRate*1.2;
+      dY+=APP.vrRight.x*yawRate*1.2;
+
+      const obj=this.el.object3D;
+      this.euler.setFromQuaternion(obj.quaternion,'YXZ');
+      this.euler.z-=THREE.MathUtils.degToRad(dR);
+      this.euler.x-=THREE.MathUtils.degToRad(dP);
+      this.euler.y-=THREE.MathUtils.degToRad(dY);
+      this.euler.x=Math.max(THREE.MathUtils.degToRad(-60),Math.min(THREE.MathUtils.degToRad(60),this.euler.x));
+      this.euler.z=Math.max(THREE.MathUtils.degToRad(-75),Math.min(THREE.MathUtils.degToRad(75),this.euler.z));
+      obj.quaternion.setFromEuler(this.euler);
+
+      // Move
+      const bm=kSh||APP.vrBoost?2.5:1;
+      const fwd=new THREE.Vector3(0,0,-APP.throttle*40*bm*dtS);
+      fwd.applyQuaternion(obj.quaternion);obj.position.add(fwd);
+
+      // Speed display
+      const tgt=APP.throttle*100*(bm);APP.speed+=(tgt-APP.speed)*3*dtS;
+
+      // Bank/pitch for ADI
+      APP.bankAngle=THREE.MathUtils.radToDeg(this.euler.z);
+      APP.pitchAngle=THREE.MathUtils.radToDeg(this.euler.x);
+
+      // Animate yoke
+      const yh=document.getElementById('yoke-head');
+      if(yh){
+        const tr=-APP.bankAngle*.6,tp=-APP.pitchAngle*.5;
+        yh.object3D.rotation.z+=(THREE.MathUtils.degToRad(tr)-yh.object3D.rotation.z)*8*dtS;
+        yh.object3D.rotation.x+=(THREE.MathUtils.degToRad(tp)-yh.object3D.rotation.x)*8*dtS;
+      }
+      const th=document.getElementById('throttle-handle');
+      if(th)th.object3D.position.y=-0.07+APP.throttle*0.14;
+    }
+
+    if(APP.mode==='explore'){
+      // Free explore: WASD moves relative to facing
+      const obj=this.el.object3D;
+      const spd=15*dtS;
+      const fwd=new THREE.Vector3(0,0,kW?-spd:kS?spd:0).applyQuaternion(obj.quaternion);
+      const rgt=new THREE.Vector3(kD?spd:kA?-spd:0,0,0).applyQuaternion(obj.quaternion);
+      obj.position.add(fwd).add(rgt);
+      APP.speed=(kW||kS||kA||kD)?25:0;
+    }
+
+    // Fuel drain
+    this._fuelT+=dtS;
+    if(this._fuelT>.5){
+      this._fuelT=0;
+      const drain=APP.mode==='flight'?APP.throttle*.08*(APP.boost?2:1):.02;
+      APP.fuel=Math.max(0,APP.fuel-drain);
+      APP.shield=Math.min(100,APP.shield+.03);
+    }
+
+    // NOVA auto
+    this._novaT+=dtS;
+    if(this._novaT>28+Math.random()*20){this._novaT=0;speakNova()}
+
+    updateHUD();
+  }
+});
+
+/* ── ASTEROID SPAWNER ─────────────────────────────────────── */
+AFRAME.registerComponent('asteroid-spawner',{
+  init(){
+    this.pool=[];this.spawnT=0;
+    const cols=[0x8a8070,0x6a6560,0x9a8880,0x7a7268,0x5a5550];
+    this.mats=cols.map(c=>new THREE.MeshStandardMaterial({color:c,roughness:.85,metalness:.08}));
+  },
+  getAst(){
+    const a=this.pool.find(x=>!x.alive);if(a)return a;
+    const geo=new THREE.DodecahedronGeometry(1,0);
+    const pos=geo.attributes.position;
+    for(let v=0;v<pos.count;v++)pos.setXYZ(v,pos.getX(v)*(.7+Math.random()*.6),pos.getY(v)*(.7+Math.random()*.6),pos.getZ(v)*(.7+Math.random()*.6));
+    geo.computeVertexNormals();
+    const mesh=new THREE.Mesh(geo,this.mats[Math.floor(Math.random()*this.mats.length)]);
+    this.el.sceneEl.object3D.add(mesh);
+    const o={mesh,alive:false,vel:new THREE.Vector3(),rx:0,ry:0,sc:1};
+    this.pool.push(o);return o;
+  },
+  spawn(){
+    const a=this.getAst();
+    a.sc=.5+Math.random()*2.5;a.mesh.scale.setScalar(a.sc);
+    const rp=document.getElementById('rig').object3D.position;
+    const sp=45;
+    a.mesh.position.set(rp.x+(Math.random()-.5)*sp,rp.y+(Math.random()-.5)*sp*.6,rp.z-(120+Math.random()*80));
+    a.mesh.rotation.set(Math.random()*Math.PI*2,Math.random()*Math.PI*2,0);
+    const spd=.3+APP.speed*.015+Math.random()*.4;
+    a.vel.set((Math.random()-.5)*.05,(Math.random()-.5)*.03,spd);
+    a.rx=(Math.random()-.5)*.04;a.ry=(Math.random()-.5)*.05;
+    a.alive=true;
+  },
+  tick(t,dt){
+    if(APP.mode!=='flight'||dt>200)return;
+    const dtS=dt/1000;
+    this.spawnT+=dtS;
+    const si=Math.max(.4,1.4-APP.speed*.01);
+    if(this.spawnT>=si){this.spawnT=0;const b=APP.speed>50?2:1;for(let i=0;i<b;i++)this.spawn()}
+    const cam=document.getElementById('cam');if(!cam)return;
+    const cp=cam.object3D.getWorldPosition(new THREE.Vector3());
+    let live=0;
+    for(const a of this.pool){
+      if(!a.alive)continue;
+      a.mesh.position.add(a.vel);
+      a.mesh.rotation.x+=a.rx;a.mesh.rotation.y+=a.ry;
+      if(a.mesh.position.z>cp.z+6){a.alive=false;APP.score+=10;continue}
+      const dist=a.mesh.position.distanceTo(cp);
+      if(dist<a.sc*1.1+.5){
+        a.alive=false;APP.hull=Math.max(0,APP.hull-(5+Math.random()*8));
+        APP.shield=Math.max(0,APP.shield-10);dangerFlash();screenShake();
+        speakNova(dist<a.sc*.5?'Direct hit! Hull critical!':'Glancing blow — shields holding.');
+        continue;
+      }else if(dist<a.sc+2.5){APP.score+=25}
+      live++;
+    }
+    const el=document.getElementById('f-ast');if(el)el.textContent=live;
+  }
+});
+
+/* VR controllers */
+AFRAME.registerComponent('vr-ctrl-left',{
+  init(){
+    this.el.addEventListener('thumbstickmoved',e=>{APP.vrLeft.x=e.detail.x||0;APP.vrLeft.y=e.detail.y||0});
+    this.el.addEventListener('gripdown',()=>{APP.vrBrake=true});
+    this.el.addEventListener('gripup',()=>{APP.vrBrake=false});
+  }
+});
+AFRAME.registerComponent('vr-ctrl-right',{
+  init(){
+    this.el.addEventListener('thumbstickmoved',e=>{APP.vrRight.x=e.detail.x||0;APP.vrRight.y=e.detail.y||0});
+    this.el.addEventListener('triggerdown',()=>{APP.vrBoost=true;boostFlash()});
+    this.el.addEventListener('triggerup',()=>{APP.vrBoost=false});
+    this.el.addEventListener('abuttondown',()=>{APP.vrBoost=true;boostFlash()});
+    this.el.addEventListener('abuttonup',()=>{APP.vrBoost=false});
+    this.el.addEventListener('bbuttondown',()=>{APP.vrBrake=true});
+    this.el.addEventListener('bbuttonup',()=>{APP.vrBrake=false});
+  }
+});
+
+/* ════════════════════════════════════════════════════════════
+   MODE LAUNCH SYSTEM
+════════════════════════════════════════════════════════════ */
+const LOAD_STEPS={
+  explore:['LOADING STAR CHARTS...','CALIBRATING SENSORS...','ACTIVATING NOVA AI...','CHARGING THRUSTERS...','READY FOR DEPARTURE.'],
+  flight: ['INITIALIZING FLIGHT SYSTEMS...','LOADING COCKPIT CONTROLS...','CALIBRATING YOKE...','SPAWNING ASTEROIDS...','FLIGHT MODE READY.']
+};
+
+function launchMode(mode){
+  const loader=document.getElementById('loader');
+  const landing=document.getElementById('landing');
+  landing.classList.add('gone');
+  loader.classList.add('show');
+  // Cycle status text
+  let si=0;const steps=LOAD_STEPS[mode];
+  const statusEl=document.getElementById('load-status');
+  const iv=setInterval(()=>{if(statusEl)statusEl.textContent=steps[si%steps.length];si++},500);
+  // Show scene
+  document.getElementById('main-scene').style.display='block';
+  setTimeout(()=>{
+    clearInterval(iv);loader.classList.add('fade-out');
+    setTimeout(()=>{
+      loader.classList.remove('show','fade-out');
+      APP.mode=mode;
+      activateMode(mode);
+    },600);
+  },2800);
+}
+
+function activateMode(mode){
+  // Show appropriate HUD
+  document.getElementById('exp-hud').classList.toggle('hide',mode!=='explore');
+  document.getElementById('flt-hud').classList.toggle('hide',mode!=='flight');
+  document.getElementById('mode-btn').style.display='block';
+
+  // Cockpit 3D objects (including new structural elements)
+  const cockpitEls=['cockpit-root','cp-left','cp-right','cp-top','cp-gl','cp-gr',
+    'cp-glass','cp-ref','cp-floor','cp-wl','cp-wr','cp-lwg','cp-rwg'];
+  cockpitEls.forEach(id=>{const el=document.getElementById(id);if(el)el.setAttribute('visible',mode==='flight')});
+
+  // Asteroid spawner
+  const spawner=document.getElementById('ast-spawner');
+  if(spawner)spawner.setAttribute('visible',mode==='flight');
+
+  // Cursor
+  const cur=document.getElementById('exp-cursor');
+  if(cur)cur.setAttribute('visible',mode==='explore');
+
+  // Explore controls: look-controls on for explore
+  const cam=document.getElementById('cam');
+  if(cam){
+    if(mode==='explore'){
+      cam.setAttribute('look-controls','pointerLockEnabled:false');
+    }
+  }
+
+  // Reset rig position
+  const rig=document.getElementById('rig');
+  if(rig)rig.object3D.position.set(0,0,0);
+
+  updateHUD();
+
+  // Nova intro
+  setTimeout(()=>{
+    if(mode==='explore')speakNova('Welcome aboard LUMINA. All systems operational, Commander.');
+    else speakNova('Flight mode activated. Throttle up to engage thrusters, Commander.');
+  },800);
+  if(mode==='explore'){
+    setTimeout(()=>speakNova('Scan planets by looking at them for 2 seconds, or clicking.'),9000);
+    // Dynamic events
+    setInterval(()=>{
+      const evts=[
+        {m:'☄ Meteor shower incoming!',t:'warn',n:7},
+        {m:'📡 Alien beacon detected.',t:'',n:5},
+        {m:'💎 Crystal cluster nearby.',t:'ok',n:9},
+        {m:'⚡ Solar flare detected!',t:'danger',n:4},
+      ];
+      const e=evts[Math.floor(Math.random()*evts.length)];
+      notify(e.m,e.t);setTimeout(()=>speakNova(NOVA_MSGS[e.n]),1000);
+    },35000);
+  }
+  if(mode==='flight'){
+    setTimeout(()=>speakNova('Asteroid field detected. Evasive maneuvers recommended.'),5000);
+    setTimeout(()=>speakNova('Shift for BOOST, Space to brake hard.'),14000);
+  }
+
+  // Fuel tick
+  setInterval(()=>{
+    APP.fuel=Math.max(0,APP.fuel-.04);
+    if(APP.fuel<20)notify('⛽ Fuel critical!','danger');
+    updateHUD();
+  },1000);
+
+  // Score tick (flight)
+  if(mode==='flight'){
+    setInterval(()=>{APP.score+=Math.round(APP.throttle*2);updateHUD()},500);
+  }
+}
+
+function switchMode(){
+  const next=APP.mode==='explore'?'flight':'explore';
+  APP.mode=null;
+  const rig=document.getElementById('rig');if(rig)rig.object3D.position.set(0,0,0);
+  if(rig)rig.object3D.quaternion.set(0,0,0,1);
+  APP.throttle=0;APP.speed=0;
+  launchMode(next);
+}
+window.switchMode=switchMode;
+
+/* ─── ASTEROID BELT (background dressing) ──────────────────── */
+document.addEventListener('DOMContentLoaded',()=>{
+  // Generate landing stars
+  const sc=document.getElementById('landing-stars');
+  if(sc)for(let i=0;i<140;i++){const s=document.createElement('div');s.className='l-star';s.style.setProperty('--d',(2+Math.random()*5)+'s');s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';s.style.opacity=Math.random()*.7+.1;sc.appendChild(s)}
+
+  // A-Frame ready: generate belt
+  const scene=document.getElementById('main-scene');
+  scene.addEventListener('loaded',()=>{
+    const cols=[0x8a8070,0x6a6560,0x9a8880,0x7a7268,0x5a5550];
+    for(let i=0;i<40;i++){
+      const r=74+Math.random()*12,a=Math.random()*Math.PI*2;
+      const ast=document.createElement('a-box');
+      const sz=.15+Math.random()*.65;
+      ast.setAttribute('width',sz);ast.setAttribute('height',sz*.7);ast.setAttribute('depth',sz*.85);
+      ast.setAttribute('color','#'+cols[i%cols.length].toString(16).padStart(6,'0'));
+      ast.setAttribute('position',`${Math.cos(a)*r} ${(Math.random()-.5)*6} ${Math.sin(a)*r}`);
+      ast.setAttribute('rotation',`${Math.random()*360} ${Math.random()*360} ${Math.random()*360}`);
+      scene.appendChild(ast);
+    }
+  });
+});
+</script>
 </body>
 </html>
