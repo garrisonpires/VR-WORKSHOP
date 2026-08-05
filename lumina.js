@@ -330,6 +330,19 @@ AFRAME.registerComponent('orbit', {
   }
 });
 
+// ─── A-FRAME: VR EXPLORATION MOVEMENT ────────────────────────────────────────
+
+AFRAME.registerComponent('vr-explore', {
+  tick() {
+    const camera = document.querySelector('[camera]');
+    if (!camera || !camera.components['look-controls']) return;
+    const dir = camera.components['look-controls'].yawObject.children[0].getWorldDirection(new THREE.Vector3());
+    if (document.querySelector('.vr-mode')) {
+      camera.object3D.position.add(dir.multiplyScalar(0.01));
+    }
+  }
+});
+
 // ─── A-FRAME: SELF-ROTATE ────────────────────────────────────────────────────
 
 AFRAME.registerComponent('self-rotate', {
@@ -612,7 +625,6 @@ AFRAME.registerComponent('collectible', {
       LUMINA.showNotification(`💎 Collected ${this.data.amount}x ${this.data.type}!`, 'success');
       LUMINA.updateMeters();
       // Animate collect
-      const start = this.el.object3D.position.clone();
       const cam = document.querySelector('[camera]').object3D.position;
       const tween = { t: 0 };
       const interval = setInterval(() => {
@@ -628,10 +640,57 @@ AFRAME.registerComponent('collectible', {
   },
   tick(t) {
     if (!this._collected) {
-      this.el.object3D.position.y = this.el.object3D.userData.baseY 
+      this.el.object3D.position.y = this.el.object3D.userData.baseY
         || (this.el.object3D.userData.baseY = this.el.object3D.position.y)
         + Math.sin(t * 0.002) * 0.15;
       this.el.object3D.rotation.y = t * 0.001;
+    }
+  }
+});
+
+// ─── A-FRAME: VR EXPLORE MOVEMENT COMPONENT (OVERHAUL addition) ──────────────
+// Reads APP/LUMINA VR thumbstick state and drives explore-mode movement.
+// Left stick  = strafe/forward-back  (matches WASD)
+// Right stick = smooth yaw turn      (matches mouse look)
+
+AFRAME.registerComponent('vr-explore-move', {
+  init() {
+    this._yaw = 0;
+  },
+  tick(t, dt) {
+    if (!dt || dt > 200) return;
+    const state = (typeof APP !== 'undefined') ? APP :
+                  (typeof LUMINA !== 'undefined' && LUMINA.state) ? LUMINA.state : null;
+    if (!state || !state.vrLeft) return;
+    const mode = state.mode || '';
+    if (mode !== 'explore' && mode !== '') return;
+
+    const dtS = dt / 1000;
+    const rig = this.el;
+    const lx = state.vrLeft.x  || 0;  // strafe
+    const ly = state.vrLeft.y  || 0;  // forward/back
+    const rx = state.vrRight.x || 0;  // yaw
+
+    const isBoost = !!state.vrBoost;
+    const baseSpd = isBoost ? 110 : 35;
+    const spd = baseSpd * dtS;
+
+    const cam = document.getElementById('cam');
+    const moveQuat = new THREE.Quaternion();
+    if (cam) {
+      moveQuat.multiplyQuaternions(rig.object3D.quaternion, cam.object3D.quaternion);
+    } else {
+      moveQuat.copy(rig.object3D.quaternion);
+    }
+
+    const fwd = new THREE.Vector3(lx * spd, 0, ly * spd).applyQuaternion(moveQuat);
+    rig.object3D.position.add(fwd);
+
+    // Smooth yaw from right stick
+    if (Math.abs(rx) > 0.1) {
+      const euler = new THREE.Euler().setFromQuaternion(rig.object3D.quaternion, 'YXZ');
+      euler.y -= rx * 1.4 * dtS;
+      rig.object3D.quaternion.setFromEuler(euler);
     }
   }
 });

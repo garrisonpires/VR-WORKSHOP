@@ -18,11 +18,12 @@
   --holo-gold: #fbbf24;
   --holo-red: #ef4444;
   --holo-green: #22c55e;
-  --bg-dark: rgba(0, 5, 20, 0.85);
-  --bg-panel: rgba(0, 20, 60, 0.75);
-  --border-glow: rgba(0, 212, 255, 0.5);
-  --text-primary: #e0f7ff;
-  --text-dim: rgba(200, 240, 255, 0.6);
+  /* ── OVERHAUL: increased opacity + brightness for VR legibility ── */
+  --bg-dark: rgba(0, 5, 20, 0.92);
+  --bg-panel: rgba(0, 18, 55, 0.88);
+  --border-glow: rgba(0, 212, 255, 0.6);
+  --text-primary: #edfcff;
+  --text-dim: rgba(210, 245, 255, 0.72);
   --font-title: 'Orbitron', monospace;
   --font-body: 'Exo 2', sans-serif;
 }
@@ -250,8 +251,9 @@ body {
   border: 1px solid var(--border-glow);
   border-radius: 8px;
   padding: 0.75rem 1rem;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.08);
+  backdrop-filter: blur(16px);
+  /* ── OVERHAUL: stronger glow so panels stand out against bright space ── */
+  box-shadow: 0 0 28px rgba(0, 212, 255, 0.14), inset 0 1px 0 rgba(0,212,255,0.12);
 }
 
 .panel-label {
@@ -1100,3 +1102,36 @@ body {
    SCROLLBAR (hidden)
    ============================================================ */
 ::-webkit-scrollbar { display: none; }
+
+/* ============================================================
+   MUTE TOGGLE BUTTON  (OVERHAUL addition)
+   ============================================================ */
+#lumina-mute-btn {
+  background: rgba(0, 18, 55, 0.88);
+  border: 1px solid rgba(0, 212, 255, 0.45);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.25s ease;
+  pointer-events: all;
+  flex-shrink: 0;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 12px rgba(0,212,255,0.1);
+}
+
+#lumina-mute-btn:hover {
+  border-color: var(--holo-cyan);
+  box-shadow: 0 0 20px rgba(0,212,255,0.25);
+  transform: scale(1.1);
+}
+
+#lumina-mute-btn.muted {
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 0 12px rgba(239,68,68,0.2);
+}
+

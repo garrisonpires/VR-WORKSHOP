@@ -338,10 +338,10 @@
 ═══════════════════════════════════════════════════ -->
 <a-scene
   id="main-scene"
-  renderer="antialias:true;colorManagement:true;physicallyCorrectLights:true;highRefreshRate:true;"
+  renderer="antialias:true;colorManagement:true;physicallyCorrectLights:true;highRefreshRate:true;exposure:1.25;toneMapping:ACESFilmic"
   vr-mode-ui="enabled:true"
-  background="color:#000007"
-  fog="type:exponential;color:#000010;density:0.0012"
+  background="color:#00000a"
+  fog="type:exponential;color:#000012;density:0.0008"
 >
 
   <!-- ── ASSETS ── -->
@@ -373,13 +373,13 @@
 
         <!-- Main panel base -->
         <a-box width="1.6" height="0.22" depth="0.52"
-          color="#060e1c" material="emissive:#020810;emissive-intensity:0.5"
+          color="#cbd5e1" material="roughness:0.4;metalness:0.3;emissive:#ffffff;emissive-intensity:0.02"
           position="0 -0.18 0.06"
         ></a-box>
 
         <!-- Panel face (angled toward pilot) -->
         <a-box width="1.55" height="0.38" depth="0.04"
-          color="#080f1e" material="emissive:#030811;emissive-intensity:0.4"
+          color="#d2d6dd" material="roughness:0.4;metalness:0.3;emissive:#ffffff;emissive-intensity:0.02"
           position="0 -0.06 -0.22" rotation="22 0 0"
         ></a-box>
 
@@ -469,11 +469,11 @@
 
         <!-- ── SIDE ARMRESTS ── -->
         <a-box width="0.2" height="0.04" depth="0.42"
-          color="#060e1c" material="emissive:#020810;emissive-intensity:0.3"
+          color="#cbd5e1" material="roughness:0.5;metalness:0.2;emissive:#ffffff;emissive-intensity:0.02"
           position="-0.68 -0.21 0.04"
         ></a-box>
         <a-box width="0.2" height="0.04" depth="0.42"
-          color="#060e1c" material="emissive:#020810;emissive-intensity:0.3"
+          color="#cbd5e1" material="roughness:0.5;metalness:0.2;emissive:#ffffff;emissive-intensity:0.02"
           position="0.68 -0.21 0.04"
         ></a-box>
 
@@ -492,8 +492,8 @@
         <!-- ── CONTROL COLUMN (yoke stem) ── -->
         <a-entity id="yoke-group" position="0 -0.05 0.12">
           <!-- Column base -->
-          <a-cylinder radius="0.022" height="0.22" color="#0d1824"
-            material="emissive:#051020;emissive-intensity:0.4"
+          <a-cylinder radius="0.022" height="0.22" color="#cbd5e1"
+            material="roughness:0.5;metalness:0.4;emissive:#ffffff;emissive-intensity:0.02"
             position="0 -0.09 0"
           ></a-cylinder>
 
@@ -501,16 +501,16 @@
           <a-entity id="yoke-head" position="0 0.03 0">
             <!-- Horizontal crossbar -->
             <a-cylinder id="yoke-bar" radius="0.018" height="0.28"
-              color="#1a2a3c"
-              material="emissive:#0a1828;emissive-intensity:0.4"
+              color="#d2d6dd"
+              material="roughness:0.4;metalness:0.3;emissive:#ffffff;emissive-intensity:0.01"
               rotation="0 0 90"
             ></a-cylinder>
 
             <!-- Left grip -->
             <a-entity position="-0.14 0 0">
               <a-cylinder radius="0.028" height="0.1"
-                color="#0f1e30"
-                material="emissive:#081228;emissive-intensity:0.5"
+                color="#a6abb5"
+                material="roughness:0.8;metalness:0.2"
                 rotation="0 0 0"
               ></a-cylinder>
               <!-- Left trigger button -->
@@ -519,10 +519,10 @@
                 position="0 0.055 0.015"
               ></a-sphere>
               <!-- Grip texture rings -->
-              <a-torus radius="0.028" radius-tubular="0.004" color="#223344"
+              <a-torus radius="0.028" radius-tubular="0.004" color="#94a3b8"
                 position="0 0.02 0" rotation="90 0 0"
               ></a-torus>
-              <a-torus radius="0.028" radius-tubular="0.004" color="#223344"
+              <a-torus radius="0.028" radius-tubular="0.004" color="#94a3b8"
                 position="0 -0.02 0" rotation="90 0 0"
               ></a-torus>
             </a-entity>
@@ -530,8 +530,8 @@
             <!-- Right grip -->
             <a-entity position="0.14 0 0">
               <a-cylinder radius="0.028" height="0.1"
-                color="#0f1e30"
-                material="emissive:#081228;emissive-intensity:0.5"
+                color="#a6abb5"
+                material="roughness:0.8;metalness:0.2"
                 rotation="0 0 0"
               ></a-cylinder>
               <!-- Right thumb button -->
@@ -541,10 +541,10 @@
                 animation="property:material.emissiveIntensity;from:0.9;to:0.3;dur:800;loop:true;dir:alternate"
               ></a-sphere>
               <!-- Grip rings -->
-              <a-torus radius="0.028" radius-tubular="0.004" color="#223344"
+              <a-torus radius="0.028" radius-tubular="0.004" color="#94a3b8"
                 position="0 0.02 0" rotation="90 0 0"
               ></a-torus>
-              <a-torus radius="0.028" radius-tubular="0.004" color="#223344"
+              <a-torus radius="0.028" radius-tubular="0.004" color="#94a3b8"
                 position="0 -0.02 0" rotation="90 0 0"
               ></a-torus>
             </a-entity>
@@ -566,12 +566,12 @@
         <a-entity id="throttle-lever" position="-0.58 -0.08 0.15">
           <!-- Throttle rail -->
           <a-box width="0.025" height="0.18" depth="0.025"
-            color="#0d1824" material="emissive:#040c18;emissive-intensity:0.3"
+            color="#cbd5e1" material="roughness:0.6;metalness:0.8"
           ></a-box>
           <!-- Throttle handle (moves up/down based on speed) -->
           <a-entity id="throttle-handle" position="0 0.05 0">
             <a-box width="0.055" height="0.04" depth="0.055"
-              color="#1a2a3c" material="emissive:#0a1828;emissive-intensity:0.5"
+              color="#cbd5e1" material="roughness:0.5;metalness:0.4"
             ></a-box>
             <a-box width="0.04" height="0.015" depth="0.04"
               color="#00d4ff" material="emissive:#00d4ff;emissive-intensity:0.8"
@@ -583,11 +583,11 @@
         <!-- ── RIGHT PITCH TRIM LEVER ── -->
         <a-entity position="0.58 -0.08 0.15">
           <a-box width="0.025" height="0.15" depth="0.025"
-            color="#0d1824" material="emissive:#040c18;emissive-intensity:0.3"
+            color="#cbd5e1" material="roughness:0.6;metalness:0.8"
           ></a-box>
           <a-entity id="trim-handle" position="0 0 0">
             <a-box width="0.05" height="0.035" depth="0.05"
-              color="#1a2a3c" material="emissive:#0a1828;emissive-intensity:0.5"
+              color="#cbd5e1" material="roughness:0.5;metalness:0.4"
             ></a-box>
             <a-box width="0.036" height="0.012" depth="0.036"
               color="#8b5cf6" material="emissive:#8b5cf6;emissive-intensity:0.8"
@@ -596,27 +596,27 @@
           </a-entity>
         </a-entity>
 
-        <!-- Cockpit ambient light -->
-        <a-entity light="type:point;color:#001840;intensity:1.2;distance:1.2" position="0 0.1 -0.2"></a-entity>
-        <a-entity light="type:point;color:#002244;intensity:0.8;distance:0.8" position="-0.6 -0.1 0"></a-entity>
-        <a-entity light="type:point;color:#002244;intensity:0.8;distance:0.8" position="0.6 -0.1 0"></a-entity>
+        <!-- Cockpit ambient light — upgraded for bright premium light grey lighting -->
+        <a-entity light="type:point;color:#ffffff;intensity:2.5;distance:2.0" position="0 0.1 -0.2"></a-entity>
+        <a-entity light="type:point;color:#d0e8ff;intensity:1.2;distance:1.2" position="-0.6 -0.1 0"></a-entity>
+        <a-entity light="type:point;color:#d0e8ff;intensity:1.2;distance:1.2" position="0.6 -0.1 0"></a-entity>
 
       </a-entity><!-- /cockpit-root -->
 
       <!-- ── COCKPIT FRAME PILLARS (side) ── -->
       <!-- Left pillar -->
       <a-box width="0.045" height="0.9" depth="0.045"
-        color="#060d1a" material="emissive:#030810;emissive-intensity:0.3"
+        color="#d2d6dd" material="roughness:0.4;metalness:0.3;emissive:#ffffff;emissive-intensity:0.02"
         position="-0.88 0.05 -0.58"
       ></a-box>
       <!-- Right pillar -->
       <a-box width="0.045" height="0.9" depth="0.045"
-        color="#060d1a" material="emissive:#030810;emissive-intensity:0.3"
+        color="#d2d6dd" material="roughness:0.4;metalness:0.3;emissive:#ffffff;emissive-intensity:0.02"
         position="0.88 0.05 -0.58"
       ></a-box>
       <!-- Top frame bar -->
       <a-box width="1.82" height="0.045" depth="0.045"
-        color="#060d1a" material="emissive:#030810;emissive-intensity:0.3"
+        color="#d2d6dd" material="roughness:0.4;metalness:0.3;emissive:#ffffff;emissive-intensity:0.02"
         position="0 0.5 -0.58"
       ></a-box>
 
@@ -653,36 +653,46 @@
   </a-entity><!-- /rig -->
 
   <!-- ── AMBIENT LIGHT ── -->
-  <a-entity light="type:ambient;color:#001020;intensity:0.5"></a-entity>
+  <!-- OVERHAUL: boosted ambient + hemisphere fill for non-pitch-black interior -->
+  <a-entity light="type:ambient;color:#0e1e3a;intensity:0.9"></a-entity>
+  <a-entity light="type:hemisphere;color:#1a3060;groundColor:#060c18;intensity:0.5"></a-entity>
 
   <!-- ── SUN (distant) ── -->
+  <!-- OVERHAUL: stronger directional sun + corona -->
   <a-entity position="200 40 -600">
     <a-sphere radius="50" src="#tex-sun"
-      material="emissive:#ff8800;emissive-intensity:0.5"
+      material="emissive:#ff9900;emissive-intensity:0.7;roughness:0.3"
       self-rotate-y
     ></a-sphere>
-    <a-entity light="type:directional;color:#fff5cc;intensity:2.2;castShadow:false" position="-1 0.5 1"></a-entity>
-    <a-sphere radius="54" color="#ff6600"
-      material="transparent:true;opacity:0.08;blending:additive;depthWrite:false"
+    <a-entity light="type:directional;color:#fff8e0;intensity:3.0;castShadow:false" position="-1 0.5 1"></a-entity>
+    <a-sphere radius="55" color="#ff8800"
+      material="transparent:true;opacity:0.1;blending:additive;depthWrite:false"
+    ></a-sphere>
+    <a-sphere radius="65" color="#ffaa00"
+      material="transparent:true;opacity:0.035;blending:additive;depthWrite:false;side:back"
     ></a-sphere>
   </a-entity>
 
-  <!-- ── DISTANT NEBULA GLOW ── -->
-  <a-sphere radius="500" color="#110033"
-    material="transparent:true;opacity:0.07;side:back;blending:additive;depthWrite:false"
-    position="0 0 -400"
+  <!-- ── COSMIC BACKGROUND & NEBULAE ── -->
+  <!-- Deep blue cosmic background void -->
+  <a-sky color="#030b20" material="shader:flat;side:back;depthWrite:false"></a-sky>
+
+  <!-- Volumetric blue/purple nebulae gas clouds -->
+  <a-sphere radius="870" color="#0033aa"
+    material="shader:flat;transparent:true;opacity:0.25;side:back;blending:additive;depthWrite:false"
+    position="-200 100 -300"
   ></a-sphere>
-  <a-sphere radius="480" color="#003355"
-    material="transparent:true;opacity:0.04;side:back;blending:additive;depthWrite:false"
-    position="-100 50 -350"
+  <a-sphere radius="860" color="#8800ff"
+    material="shader:flat;transparent:true;opacity:0.12;side:back;blending:additive;depthWrite:false"
+    position="300 -200 400"
   ></a-sphere>
-  <a-sphere radius="420" color="#220044"
-    material="transparent:true;opacity:0.05;side:back;blending:additive;depthWrite:false"
-    position="80 -30 -450"
+  <a-sphere radius="880" color="#00aaff"
+    material="shader:flat;transparent:true;opacity:0.15;side:back;blending:additive;depthWrite:false"
+    position="-100 -300 -500"
   ></a-sphere>
 
-  <!-- ── MILKY WAY SKYBOX ── -->
-  <a-sky src="#tex-sky" radius="900" rotation="0 -90 15" material="side:back;opacity:0.85"></a-sky>
+  <!-- ── MILKY WAY SKYBOX blended additively ── -->
+  <a-sky src="#tex-sky" radius="890" rotation="0 -90 15" material="shader:flat;side:back;transparent:true;opacity:0.65;blending:additive;depthWrite:false"></a-sky>
 
   <!-- ── PROCEDURAL STARS ── -->
   <a-entity starfield-gen></a-entity>
@@ -1344,6 +1354,127 @@ window.addEventListener('load', () => {
 document.addEventListener('keydown', e => {
   if (e.code === 'Escape' && pointerLocked) document.exitPointerLock();
 });
+
+/* ════════════════════════════════════════════════════════════
+   LUMINA AUDIO — Cockpit Flight Sound System  (OVERHAUL)
+   Synthesized Web Audio API — no external files.
+════════════════════════════════════════════════════════════ */
+const LUMINA_AUDIO = (() => {
+  let ctx = null, muted = false;
+  let engineNodes = null;
+  let ambientNodes = null;
+
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function master() {
+    if (!master._n) {
+      master._n = getCtx().createGain();
+      master._n.gain.value = 1;
+      master._n.connect(getCtx().destination);
+    }
+    return master._n;
+  }
+  function tone(freq, type, dur, vol=0.2, detune=0) {
+    if (muted) return;
+    const c=getCtx(),g=c.createGain(),o=c.createOscillator();
+    o.type=type; o.frequency.value=freq; o.detune.value=detune;
+    g.gain.setValueAtTime(vol,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+dur);
+    o.connect(g); g.connect(master()); o.start(); o.stop(c.currentTime+dur);
+  }
+  function noise(dur,vol=0.15,freq=400,q=1) {
+    if (muted) return;
+    const c=getCtx();
+    const buf=c.createBuffer(1,c.sampleRate*dur,c.sampleRate);
+    const d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const src=c.createBufferSource(); src.buffer=buf;
+    const flt=c.createBiquadFilter(); flt.type='bandpass'; flt.frequency.value=freq; flt.Q.value=q;
+    const g=c.createGain(); g.gain.setValueAtTime(vol,c.currentTime); g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+dur);
+    src.connect(flt); flt.connect(g); g.connect(master()); src.start(); src.stop(c.currentTime+dur);
+  }
+
+  // Ambient space drone
+  function startAmbient() {
+    if (muted||ambientNodes) return;
+    const c=getCtx(), g=c.createGain(); g.gain.value=0.055; g.connect(master());
+    const o1=c.createOscillator(); o1.type='sine'; o1.frequency.value=55;
+    const o2=c.createOscillator(); o2.type='sine'; o2.frequency.value=82; o2.detune.value=4;
+    const lfo=c.createOscillator(); lfo.frequency.value=0.07;
+    const lfoG=c.createGain(); lfoG.gain.value=7;
+    lfo.connect(lfoG); lfoG.connect(o1.frequency);
+    [o1,o2].forEach(o=>o.connect(g));
+    [o1,o2,lfo].forEach(o=>o.start());
+    ambientNodes={g,oscs:[o1,o2],lfo};
+  }
+
+  // Engine hum
+  function setThrottle(t) {
+    if (muted) return;
+    const c=getCtx();
+    if (!engineNodes) {
+      const g=c.createGain(); g.gain.value=0.02; g.connect(master());
+      const o=c.createOscillator(); o.type='sawtooth'; o.frequency.value=80;
+      const flt=c.createBiquadFilter(); flt.type='lowpass'; flt.frequency.value=400;
+      o.connect(flt); flt.connect(g); o.start();
+      engineNodes={g,o,flt};
+    }
+    const now=c.currentTime;
+    engineNodes.o.frequency.setTargetAtTime(80+t*220,now,0.12);
+    engineNodes.g.gain.setTargetAtTime(0.02+t*0.18,now,0.18);
+    engineNodes.flt.frequency.setTargetAtTime(200+t*800,now,0.12);
+  }
+
+  function sfxImpact()   { noise(0.3,0.32,130,0.8); tone(70,'sawtooth',0.22,0.18); }
+  function sfxNearMiss() { noise(0.15,0.12,900,0.7); }
+  function sfxBoost()    { noise(0.22,0.18,500,0.5); tone(180,'sawtooth',0.18,0.1); }
+  function sfxNova()     { tone(880,'sine',0.06,0.07); setTimeout(()=>tone(1100,'sine',0.09,0.06),70); }
+  function sfxPing()     { tone(1320,'sine',0.07,0.07); }
+
+  function toggleMute() {
+    muted=!muted;
+    if(master._n) master._n.gain.value=muted?0:1;
+    document.querySelectorAll('#lumina-mute-btn').forEach(b=>{ b.textContent=muted?'\uD83D\uDD07':'\uD83D\uDD0A'; });
+  }
+
+  // Unlock
+  function unlock() { getCtx(); }
+  document.addEventListener('click', unlock, {once:false});
+  document.addEventListener('keydown', unlock, {once:false});
+
+  return { startAmbient, setThrottle, sfxImpact, sfxNearMiss, sfxBoost, sfxNova, sfxPing, toggleMute };
+})();
+
+// Hook audio into existing functions
+const _origDangerFlash = dangerFlash;
+dangerFlash = function() { _origDangerFlash(); LUMINA_AUDIO.sfxImpact(); };
+
+const _origBoostFlash = boostFlash;
+boostFlash = function() { _origBoostFlash(); LUMINA_AUDIO.sfxBoost(); };
+
+const _origSpeakNova = speakNova;
+speakNova = function(txt) { _origSpeakNova(txt); LUMINA_AUDIO.sfxNova(); };
+
+// Start ambient on first user interaction
+document.addEventListener('click', () => {
+  LUMINA_AUDIO.startAmbient();
+}, { once: true });
+
+// Patch flight-controller tick for engine hum
+if (AFRAME.components['flight-controller']) {
+  const _origTick = AFRAME.components['flight-controller'].Component.prototype.tick;
+  AFRAME.components['flight-controller'].Component.prototype.tick = function(t, dt) {
+    _origTick.call(this, t, dt);
+    LUMINA_AUDIO.setThrottle(G.throttle || 0);
+  };
+}
+
+// Score near-miss ping
+const _origNearMiss = window._nearMissPing;
+window._lumina_nearMissPing = () => LUMINA_AUDIO.sfxPing();
+
 </script>
 </body>
 </html>
