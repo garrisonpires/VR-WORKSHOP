@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="LUMINA – An immersive VR space exploration experience. Travel through a living universe, discover alien civilizations, and experience realistic zero-gravity physics." />
+  <meta name="keywords" content="VR, space, exploration, A-Frame, WebVR, WebXR, LUMINA" />
+  <title>LUMINA – Immersive VR Space Exploration</title>
+  <link rel="stylesheet" href="lumina.css" />
+
+  <!-- A-Frame 1.7.1 -->
+  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+  <!-- A-Frame Extras (physics + movement) -->
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.4.0/dist/aframe-extras.min.js"></script>
+</head>
+
+<body>
+
+  <!-- ╔══════════════════════════════════════════════════════════╗
+       ║              LOADING SCREEN                            ║
+       ╚══════════════════════════════════════════════════════════╝ -->
+  <div id="loading-screen">
+    <div class="loading-stars" id="loading-stars-container"></div>
+    <div class="loading-logo">LUMINA</div>
+    <div class="loading-subtitle">Immersive VR Space Exploration</div>
+    <div class="loading-bar-wrapper">
+      <div class="loading-bar-track">
+        <div class="loading-bar-fill"></div>
+      </div>
+      <div class="loading-status" id="loading-status">INITIALIZING NAVIGATION CORE...</div>
+    </div>
+  </div>
+
+  <!-- ╔══════════════════════════════════════════════════════════╗
+       ║              HUD OVERLAY                               ║
+       ╚══════════════════════════════════════════════════════════╝ -->
+  <div id="hud-overlay">
+
+    <!-- Corner brackets -->
+    <div class="hud-corner tl"></div>
+    <div class="hud-corner tr"></div>
+    <div class="hud-corner bl"></div>
+    <div class="hud-corner br"></div>
+
+    <!-- TOP BAR -->
+    <div id="hud-top">
+      <div class="hud-title">◈ LUMINA EXPLORER ◈</div>
+      <div class="hud-clock" id="hud-clock">00:00:00 UTC</div>
+    </div>
+
+    <!-- EVA INDICATOR -->
+    <div id="eva-indicator">⚠ EVA MODE ACTIVE ⚠</div>
+
+    <!-- LEFT PANEL: Ship Status -->
+    <div id="hud-left">
+      <div class="hud-panel">
+        <div class="panel-label">◈ SHIP STATUS</div>
+        <!-- Fuel -->
+        <div class="meter-row">
+          <span class="meter-icon">⛽</span>
+          <span class="meter-label">FUEL</span>
+          <div class="meter-bar"><div class="meter-fill fuel" id="fuel-bar" style="width:100%"></div></div>
+          <span class="meter-val" id="fuel-val">100%</span>
+        </div>
+        <!-- Oxygen -->
+        <div class="meter-row">
+          <span class="meter-icon">💨</span>
+          <span class="meter-label">O₂</span>
+          <div class="meter-bar"><div class="meter-fill oxygen" id="oxygen-bar" style="width:100%"></div></div>
+          <span class="meter-val" id="oxygen-val">100%</span>
+        </div>
+        <!-- Hull -->
+        <div class="meter-row">
+          <span class="meter-icon">🛡</span>
+          <span class="meter-label">HULL</span>
+          <div class="meter-bar"><div class="meter-fill hull" id="hull-bar" style="width:100%"></div></div>
+          <span class="meter-val" id="hull-val">100%</span>
+        </div>
+        <!-- Shield -->
+        <div class="meter-row">
+          <span class="meter-icon">⚡</span>
+          <span class="meter-label">SHIELD</span>
+          <div class="meter-bar"><div class="meter-fill shield" id="shield-bar" style="width:100%"></div></div>
+          <span class="meter-val" id="shield-val">100%</span>
+        </div>
+      </div>
+
+      <!-- XP & Level -->
+      <div class="hud-panel">
+        <div class="panel-label">◈ EXPERIENCE</div>
+        <div class="xp-bar-wrapper">
+          <div class="xp-fill" id="xp-fill" style="width:0%"></div>
+        </div>
+        <div class="xp-label" id="xp-label">LVL 1  ·  0/1000 XP</div>
+      </div>
+
+      <!-- Nav data -->
+      <div class="hud-panel">
+        <div class="panel-label">◈ NAVIGATION</div>
+        <div class="nav-item">
+          <span class="nav-key">SECTOR</span>
+          <span class="nav-val">SOL-ALPHA</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-key">COORDS</span>
+          <span class="nav-val" id="nav-coords">0,0,0</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-key">HEADING</span>
+          <span class="nav-val">NNE</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-key">TEMP</span>
+          <span class="nav-val">-270°C</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: Mission & Resources -->
+    <div id="hud-right">
+      <!-- Mission -->
+      <div class="hud-panel" style="background: rgba(0,20,60,0.75); border:1px solid rgba(0,212,255,0.5); border-radius:8px; padding:0.75rem 1rem; backdrop-filter:blur(12px);">
+        <div class="mission-title">◈ ACTIVE MISSION</div>
+        <div class="mission-name">Explore the Solar System</div>
+        <div class="mission-desc">Scan all 8 planets and document your findings for NOVA's research database.</div>
+        <div class="mission-progress-bar">
+          <div class="mission-progress-fill" id="mission-progress" style="width:35%"></div>
+        </div>
+        <div style="font-size:0.6rem; color:rgba(200,240,255,0.5); margin-top:0.3rem; font-family:'Orbitron',monospace;">PROGRESS: 35%</div>
+      </div>
+
+      <!-- Resources -->
+      <div class="hud-panel">
+        <div class="panel-label">◈ RESOURCES</div>
+        <div class="nav-item">
+          <span class="nav-key">💰 Credits</span>
+          <span class="nav-val" id="credits-val">850</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-key">⛏ Minerals</span>
+          <span class="nav-val" id="minerals-val">3</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-key">💎 Crystals</span>
+          <span class="nav-val" id="crystals-val">1</span>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="hud-panel">
+        <div class="panel-label">◈ QUICK ACTIONS</div>
+        <div class="key-hint"><span class="key">W/S/A/D</span><span class="key-label">Move</span></div>
+        <div class="key-hint"><span class="key">WASD+Mouse</span><span class="key-label">Look</span></div>
+        <div class="key-hint"><span class="key">E</span><span class="key-label">EVA Mode</span></div>
+        <div class="key-hint"><span class="key">U</span><span class="key-label">Upgrades</span></div>
+        <div class="key-hint"><span class="key">N</span><span class="key-label">NOVA Talk</span></div>
+        <div class="key-hint"><span class="key">Click</span><span class="key-label">Scan/Interact</span></div>
+      </div>
+    </div>
+
+    <!-- BOTTOM: Velocity + Compass + Radar -->
+    <div id="hud-bottom">
+      <div class="velocity-display">
+        <span class="velocity-val" id="velocity-val">0</span>
+        <span class="velocity-unit">KM/S RELATIVE</span>
+      </div>
+
+      <div class="compass-display">
+        <div class="compass-ring">
+          <div class="compass-needle"></div>
+        </div>
+      </div>
+
+      <div class="radar-display">
+        <div class="radar-rings"></div>
+        <div class="radar-sweep"></div>
+        <!-- Random blips -->
+        <div class="radar-dot" style="top:30%;left:60%"></div>
+        <div class="radar-dot" style="top:65%;left:25%; background:#fbbf24; box-shadow:0 0 6px #fbbf24;"></div>
+        <div class="radar-dot" style="top:20%;left:40%; background:#ef4444; box-shadow:0 0 6px #ef4444;"></div>
+        <div class="radar-dot" style="top:50%;left:50%; background:#22c55e; box-shadow:0 0 6px #22c55e;"></div>
+      </div>
+    </div>
+
+    <!-- NOVA AI PANEL -->
+    <div id="nova-panel" class="hidden">
+      <div class="nova-orb"></div>
+      <div class="nova-content">
+        <div class="nova-label">◈ NOVA AI COMPANION</div>
+        <div class="nova-text" id="nova-text">"Welcome aboard LUMINA."</div>
+      </div>
+    </div>
+
+    <!-- PLANET SCANNER -->
+    <div id="planet-scanner" class="hidden">
+      <div class="scanner-scan-line"></div>
+      <div class="scanner-header">
+        <span class="scanner-icon" id="scan-icon">🌍</span>
+        <span class="scanner-planet-name">EARTH</span>
+      </div>
+      <div class="scanner-data">
+        <div class="scanner-row">
+          <span class="scanner-key">Temperature</span>
+          <span class="scanner-val" id="scan-temp">15°C avg</span>
+        </div>
+        <div class="scanner-row">
+          <span class="scanner-key">Atmosphere</span>
+          <span class="scanner-val" id="scan-atmo">N₂, O₂</span>
+        </div>
+        <div class="scanner-row">
+          <span class="scanner-key">Gravity</span>
+          <span class="scanner-val" id="scan-grav">9.81 m/s²</span>
+        </div>
+        <div class="scanner-row">
+          <span class="scanner-key">Diameter</span>
+          <span class="scanner-val" id="scan-diam">12,742 km</span>
+        </div>
+        <div class="scanner-row">
+          <span class="scanner-key">Dist. from Sun</span>
+          <span class="scanner-val" id="scan-dist">149.6M km</span>
+        </div>
+        <div class="scanner-fact" id="scan-fact">71% of Earth's surface is covered by water.</div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div id="notifications"></div>
+
+    <!-- CROSSHAIR -->
+    <div class="crosshair">
+      <div class="crosshair-ring"></div>
+    </div>
+
+    <!-- GALAXY TRANSITION -->
+    <div id="galaxy-transition"></div>
+
+    <!-- BLACK HOLE WARNING -->
+    <div id="blackhole-warning"></div>
+
+  </div><!-- /hud-overlay -->
+
+  <!-- ╔══════════════════════════════════════════════════════════╗
+       ║              UPGRADE MENU                              ║
+       ╚══════════════════════════════════════════════════════════╝ -->
+  <div id="upgrade-menu" class="hidden">
+    <div class="upgrade-container">
+      <div class="upgrade-header">
+        <h2>◈ SHIP UPGRADES ◈</h2>
+        <p>Enhance your LUMINA Explorer with advanced technology</p>
+      </div>
+
+      <!-- Resources summary -->
+      <div class="resources-display">
+        <div class="resource-item">
+          <div class="resource-amount" id="credits-val">850</div>
+          <div class="resource-label">CREDITS</div>
+        </div>
+        <div class="resource-item">
+          <div class="resource-amount" id="minerals-val2">3</div>
+          <div class="resource-label">MINERALS</div>
+        </div>
+        <div class="resource-item">
+          <div class="resource-amount" id="crystals-val2">1</div>
+          <div class="resource-label">CRYSTALS</div>
+        </div>
+      </div>
+
+      <div class="upgrade-grid">
+        <!-- Thrusters -->
+        <div class="upgrade-card" data-system="thrusters" onclick="buyUpgrade('thrusters')">
+          <div class="upgrade-icon">🚀</div>
+          <div class="upgrade-name">THRUSTERS</div>
+          <div class="upgrade-level-bar">
+            <div class="upgrade-pip filled"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+          </div>
+          <div class="upgrade-cost">Cost: 200 CR</div>
+        </div>
+        <!-- Scanner -->
+        <div class="upgrade-card" data-system="scanner" onclick="buyUpgrade('scanner')">
+          <div class="upgrade-icon">🔭</div>
+          <div class="upgrade-name">SCANNER</div>
+          <div class="upgrade-level-bar">
+            <div class="upgrade-pip filled"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+          </div>
+          <div class="upgrade-cost">Cost: 150 CR</div>
+        </div>
+        <!-- Fuel Efficiency -->
+        <div class="upgrade-card" data-system="fuelEff" onclick="buyUpgrade('fuelEff')">
+          <div class="upgrade-icon">⛽</div>
+          <div class="upgrade-name">FUEL EFFICIENCY</div>
+          <div class="upgrade-level-bar">
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+          </div>
+          <div class="upgrade-cost">Cost: 120 CR</div>
+        </div>
+        <!-- Shield -->
+        <div class="upgrade-card" data-system="shield" onclick="buyUpgrade('shield')">
+          <div class="upgrade-icon">🛡</div>
+          <div class="upgrade-name">SHIELD MATRIX</div>
+          <div class="upgrade-level-bar">
+            <div class="upgrade-pip filled"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+          </div>
+          <div class="upgrade-cost">Cost: 200 CR</div>
+        </div>
+        <!-- Navigation -->
+        <div class="upgrade-card" data-system="navigation" onclick="buyUpgrade('navigation')">
+          <div class="upgrade-icon">🗺</div>
+          <div class="upgrade-name">NAVIGATION</div>
+          <div class="upgrade-level-bar">
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+          </div>
+          <div class="upgrade-cost">Cost: 100 CR</div>
+        </div>
+        <!-- AI -->
+        <div class="upgrade-card" data-system="ai" onclick="buyUpgrade('ai')">
+          <div class="upgrade-icon">🤖</div>
+          <div class="upgrade-name">NOVA AI CORE</div>
+          <div class="upgrade-level-bar">
+            <div class="upgrade-pip filled"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+          </div>
+          <div class="upgrade-cost">Cost: 180 CR</div>
+        </div>
+        <!-- Jetpack -->
+        <div class="upgrade-card" data-system="jetpack" onclick="buyUpgrade('jetpack')">
+          <div class="upgrade-icon">🧳</div>
+          <div class="upgrade-name">JETPACK</div>
+          <div class="upgrade-level-bar">
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+          </div>
+          <div class="upgrade-cost">Cost: 250 CR</div>
+        </div>
+        <!-- Radar -->
+        <div class="upgrade-card" data-system="radar" onclick="buyUpgrade('radar')">
+          <div class="upgrade-icon">📡</div>
+          <div class="upgrade-name">RADAR ARRAY</div>
+          <div class="upgrade-level-bar">
+            <div class="upgrade-pip filled"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+          </div>
+          <div class="upgrade-cost">Cost: 130 CR</div>
+        </div>
+        <!-- Storage -->
+        <div class="upgrade-card" data-system="storage" onclick="buyUpgrade('storage')">
+          <div class="upgrade-icon">📦</div>
+          <div class="upgrade-name">CARGO HOLD</div>
+          <div class="upgrade-level-bar">
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+          </div>
+          <div class="upgrade-cost">Cost: 90 CR</div>
+        </div>
+        <!-- Appearance -->
+        <div class="upgrade-card" data-system="appearance" onclick="buyUpgrade('appearance')">
+          <div class="upgrade-icon">✨</div>
+          <div class="upgrade-name">HULL SKIN</div>
+          <div class="upgrade-level-bar">
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+            <div class="upgrade-pip"></div>
+          </div>
+          <div class="upgrade-cost">Cost: 80 CR</div>
+        </div>
+      </div>
+
+      <button class="upgrade-close-btn" onclick="closeUpgradeMenu()">[ CLOSE — RETURN TO COCKPIT ]</button>
+    </div>
+  </div>
+
+  <!-- ╔══════════════════════════════════════════════════════════╗
+       ║              A-FRAME VR SCENE                          ║
+       ╚══════════════════════════════════════════════════════════╝ -->
+  <a-scene
+    id="lumina-scene"
+    renderer="antialias:true; colorManagement:true; physicallyCorrectLights:true; highRefreshRate:true; exposure:1.0;"
+    vr-mode-ui="enabled:true"
+    background="color: #000007"
+    fog="type:exponential; color:#000010; density:0.0008"
+    stats="false"
+  >
+
+    <!-- ── ASSETS ─────────────────────────────────────────────── -->
+    <a-assets timeout="15000">
+      <!-- Planet textures via esoteric CDN -->
+      <img id="tex-sun"     src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/The_Sun_by_the_Atmospheric_Imaging_Assembly_of_NASA%27s_Solar_Dynamics_Observatory_-_20100819.jpg/1024px-The_Sun_by_the_Atmospheric_Imaging_Assembly_of_NASA%27s_Solar_Dynamics_Observatory_-_20100819.jpg" crossorigin="anonymous" />
+      <img id="tex-earth"   src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Africa_and_Europe_from_a_Million_Miles_Away.png/1024px-Africa_and_Europe_from_a_Million_Miles_Away.png" crossorigin="anonymous" />
+      <img id="tex-mars"    src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/1024px-OSIRIS_Mars_true_color.jpg" crossorigin="anonymous" />
+      <img id="tex-jupiter" src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Jupiter_and_its_shrunken_Great_Red_Spot.jpg/1024px-Jupiter_and_its_shrunken_Great_Red_Spot.jpg" crossorigin="anonymous" />
+      <img id="tex-moon"    src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/FullMoon2010.jpg/1024px-FullMoon2010.jpg" crossorigin="anonymous" />
+      <img id="tex-saturn"  src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Saturn_during_Equinox.jpg/1024px-Saturn_during_Equinox.jpg" crossorigin="anonymous" />
+      <img id="tex-venus"   src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Venus-real_color.jpg/1024px-Venus-real_color.jpg" crossorigin="anonymous" />
+      <img id="tex-neptune" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Neptune_Full.jpg/1024px-Neptune_Full.jpg" crossorigin="anonymous" />
+      <img id="tex-nebula"  src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Eta_Carinae.jpg/1280px-Eta_Carinae.jpg" crossorigin="anonymous" />
+      <!-- Milky Way -->
+      <img id="tex-sky"     src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/ESO-VLT-Laser-phot-0a-99.jpg/1280px-ESO-VLT-Laser-phot-0a-99.jpg" crossorigin="anonymous" />
+    </a-assets>
+
+    <!-- ── CAMERA RIG ─────────────────────────────────────────── -->
+    <a-entity id="camera-rig" position="0 1.6 0" movement-controls="fly:true; speed:8; constrainToNavMesh:false">
+      <a-camera
+        id="main-camera"
+        look-controls="pointerLockEnabled:true"
+        wasd-controls="fly:true; speed:8"
+        fov="80"
+        near="0.1"
+        far="2000"
+      >
+        <!-- Cursor for gaze interaction -->
+        <a-cursor
+          id="cursor"
+          color="#00ffcc"
+          opacity="0.5"
+          raycaster="objects: .scannable, .interactable, .collectible-obj"
+          fuse="true"
+          fuse-timeout="2000"
+          animation__click="property:scale; startEvents:click; from:0.1 0.1 0.1; to:1 1 1; dur:150"
+        ></a-cursor>
+
+        <!-- VR Controllers visualization (desktop fallback) -->
+      </a-camera>
+    </a-entity>
+
+    <!-- ── AMBIENT LIGHT ──────────────────────────────────────── -->
+    <a-entity light="type:ambient; color:#001428; intensity:0.4"></a-entity>
+
+    <!-- ── SUN ────────────────────────────────────────────────── -->
+    <a-entity position="0 0 -120">
+      <!-- Sun sphere -->
+      <a-sphere
+        id="sun"
+        radius="18"
+        src="#tex-sun"
+        class="scannable"
+        emissive="#ff8800"
+        emissive-intensity="0.6"
+        self-rotate="speed:0.05"
+      >
+        <!-- Sunlight point light -->
+        <a-entity light="type:point; color:#fff5cc; intensity:3.5; distance:600; decay:1.5"></a-entity>
+      </a-sphere>
+
+      <!-- Solar corona glow -->
+      <a-sphere radius="20" color="#ff6600" material="transparent:true; opacity:0.12; blending:additive; depthWrite:false;" self-rotate="speed:0.03"></a-sphere>
+      <a-sphere radius="22" color="#ffaa00" material="transparent:true; opacity:0.06; blending:additive; depthWrite:false;" self-rotate="speed:0.02"></a-sphere>
+
+      <!-- Lens flare text label -->
+      <a-text value="SOL" position="0 21 0" align="center" color="#ffcc88" width="15" font="mozillavr"></a-text>
+    </a-entity>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SOLAR SYSTEM PLANETS
+         ══════════════════════════════════════════════════════════ -->
+
+    <!-- ── MERCURY ──────────────────────────────────────────────── -->
+    <a-entity id="mercury-orbit" orbit="radius:28; speed:0.09; offset:1.0; tilt:0.1">
+      <a-sphere
+        id="mercury"
+        radius="0.8"
+        color="#a0998c"
+        class="scannable"
+        planet-scannable="planet:mercury"
+        self-rotate="speed:0.04"
+      >
+        <a-entity light="type:point; color:#888888; intensity:0.3; distance:5"></a-entity>
+      </a-sphere>
+    </a-entity>
+
+    <!-- ── VENUS ────────────────────────────────────────────────── -->
+    <a-entity id="venus-orbit" orbit="radius:38; speed:0.07; offset:2.1; tilt:0.2">
+      <a-sphere
+        id="venus"
+        radius="1.4"
+        src="#tex-venus"
+        class="scannable"
+        planet-scannable="planet:venus"
+        self-rotate="speed:0.025"
+        atmosphere="color:#e8c87a; opacity:0.2; scale:1.1"
+      >
+      </a-sphere>
+      <a-text value="VENUS" position="0 2.2 0" align="center" color="#e8c87a" width="8" font="mozillavr"></a-text>
+    </a-entity>
+
+    <!-- ── EARTH ────────────────────────────────────────────────── -->
+    <a-entity id="earth-orbit" orbit="radius:50; speed:0.055; offset:0.5; tilt:0.5">
+      <a-sphere
+        id="earth"
+        radius="1.8"
+        src="#tex-earth"
+        class="scannable"
+        planet-scannable="planet:earth"
+        self-rotate="speed:0.08"
+        atmosphere="color:#4488ff; opacity:0.18; scale:1.12"
+      >
+      </a-sphere>
+      <!-- Moon -->
+      <a-entity orbit="radius:4; speed:0.4; offset:0; tilt:0.1">
+        <a-sphere
+          id="moon"
+          radius="0.5"
+          src="#tex-moon"
+          class="scannable"
+          planet-scannable="planet:moon"
+          self-rotate="speed:0.05"
+        ></a-sphere>
+      </a-entity>
+      <a-text value="EARTH" position="0 2.7 0" align="center" color="#88ccff" width="8" font="mozillavr"></a-text>
+    </a-entity>
+
+    <!-- ── MARS ─────────────────────────────────────────────────── -->
+    <a-entity id="mars-orbit" orbit="radius:65; speed:0.04; offset:1.8; tilt:0.3">
+      <a-sphere
+        id="mars"
+        radius="1.3"
+        src="#tex-mars"
+        class="scannable"
+        planet-scannable="planet:mars"
+        self-rotate="speed:0.07"
+        atmosphere="color:#cc4422; opacity:0.1; scale:1.08"
+      >
+      </a-sphere>
+      <!-- Alien ruins on Mars -->
+      <a-entity position="0 1.5 0">
+        <a-box
+          width="0.3" height="0.5" depth="0.3"
+          color="#886655"
+          class="interactable"
+          artifact-scannable="story:Ancient Martian monolith — predating recorded history by 2.3 billion years."
+          position="-0.3 0 0"
+        ></a-box>
+        <a-box
+          width="0.2" height="0.7" depth="0.2"
+          color="#997766"
+          class="interactable"
+          artifact-scannable="story:Remnant of an advanced energy conduit from a lost Martian civilization."
+          position="0.3 0 0"
+        ></a-box>
+      </a-entity>
+      <a-text value="MARS" position="0 2.2 0" align="center" color="#ff8866" width="8" font="mozillavr"></a-text>
+    </a-entity>
+
+    <!-- ── ASTEROID BELT ─────────────────────────────────────────── -->
+    <a-entity id="asteroid-belt" position="0 0 0">
+      <!-- 30 procedural asteroids in a ring -->
+      <a-entity id="ast-gen"></a-entity>
+    </a-entity>
+
+    <!-- ── JUPITER ───────────────────────────────────────────────── -->
+    <a-entity id="jupiter-orbit" orbit="radius:100; speed:0.022; offset:3.5; tilt:0.1">
+      <a-sphere
+        id="jupiter"
+        radius="5.5"
+        src="#tex-jupiter"
+        class="scannable"
+        planet-scannable="planet:jupiter"
+        self-rotate="speed:0.18"
+        atmosphere="color:#e8b86a; opacity:0.12; scale:1.06"
+      >
+      </a-sphere>
+      <!-- Great Red Spot indicator -->
+      <a-text value="JUPITER" position="0 7 0" align="center" color="#e8c88a" width="10" font="mozillavr"></a-text>
+    </a-entity>
+
+    <!-- ── SATURN ─────────────────────────────────────────────────── -->
+    <a-entity id="saturn-orbit" orbit="radius:140; speed:0.016; offset:1.2; tilt:0.4">
+      <a-sphere
+        id="saturn"
+        radius="4.5"
+        src="#tex-saturn"
+        class="scannable"
+        planet-scannable="planet:saturn"
+        self-rotate="speed:0.14"
+      >
+      </a-sphere>
+      <!-- Saturn's rings -->
+      <a-torus
+        radius="7"
+        radius-tubular="3"
+        arc="360"
+        segments-tubular="80"
+        color="#c8aa88"
+        rotation="-15 0 0"
+        material="transparent:true; opacity:0.55; side:double"
+        self-rotate="speed:0.03"
+      ></a-torus>
+      <a-torus
+        radius="8.5"
+        radius-tubular="1.2"
+        arc="360"
+        segments-tubular="80"
+        color="#a89878"
+        rotation="-15 0 0"
+        material="transparent:true; opacity:0.35; side:double"
+        self-rotate="speed:0.025"
+      ></a-torus>
+      <a-text value="SATURN" position="0 7 0" align="center" color="#ddc8a0" width="10" font="mozillavr"></a-text>
+    </a-entity>
+
+    <!-- ── URANUS ─────────────────────────────────────────────────── -->
+    <a-entity id="uranus-orbit" orbit="radius:185; speed:0.011; offset:2.7; tilt:1.7">
+      <a-sphere
+        id="uranus"
+        radius="3.2"
+        color="#88e0d8"
+        class="scannable"
+        planet-scannable="planet:uranus"
+        self-rotate="speed:0.09; axis:z"
+        atmosphere="color:#88e8e0; opacity:0.14; scale:1.08"
+      >
+      </a-sphere>
+      <a-torus
+        radius="4.5"
+        radius-tubular="0.6"
+        arc="360"
+        segments-tubular="60"
+        color="#aaeee8"
+        rotation="0 0 80"
+        material="transparent:true; opacity:0.3; side:double"
+      ></a-torus>
+      <a-text value="URANUS" position="0 5 0" align="center" color="#88e8d8" width="10" font="mozillavr"></a-text>
+    </a-entity>
+
+    <!-- ── NEPTUNE ────────────────────────────────────────────────── -->
+    <a-entity id="neptune-orbit" orbit="radius:230; speed:0.008; offset:0.8; tilt:0.3">
+      <a-sphere
+        id="neptune"
+        radius="3.0"
+        src="#tex-neptune"
+        class="scannable"
+        planet-scannable="planet:neptune"
+        self-rotate="speed:0.12"
+        atmosphere="color:#3388ff; opacity:0.2; scale:1.1"
+      >
+      </a-sphere>
+      <a-text value="NEPTUNE" position="0 4.5 0" align="center" color="#6699ff" width="10" font="mozillavr"></a-text>
+    </a-entity>
+
+    <!-- ══════════════════════════════════════════════════════════
+         DEEP SPACE FEATURES
+         ══════════════════════════════════════════════════════════ -->
+
+    <!-- ── WORMHOLE ───────────────────────────────────────────────── -->
+    <a-entity id="wormhole" position="80 15 -180">
+      <!-- Outer rings -->
+      <a-torus
+        radius="6" radius-tubular="0.3" arc="360" segments-tubular="80"
+        color="#8855ff"
+        material="transparent:true; opacity:0.8; blending:additive; emissive:#8855ff; emissive-intensity:0.8"
+        wormhole-spin="speed:1.2"
+        class="interactable"
+        wormhole-enter
+      ></a-torus>
+      <a-torus
+        radius="5.4" radius-tubular="0.2" arc="360" segments-tubular="80"
+        color="#aa77ff"
+        material="transparent:true; opacity:0.6; blending:additive; emissive:#aa77ff; emissive-intensity:0.6"
+        wormhole-spin="speed:-0.8"
+      ></a-torus>
+      <a-torus
+        radius="4.6" radius-tubular="0.15" arc="360" segments-tubular="60"
+        color="#cc99ff"
+        material="transparent:true; opacity:0.4; blending:additive"
+        wormhole-spin="speed:2.0"
+      ></a-torus>
+      <!-- Core -->
+      <a-sphere
+        radius="4.2"
+        color="#110022"
+        material="transparent:true; opacity:0.95; emissive:#330055; emissive-intensity:0.3"
+      ></a-sphere>
+      <!-- Inner glow -->
+      <a-sphere
+        radius="3.8"
+        color="#6633bb"
+        material="transparent:true; opacity:0.4; blending:additive; depthWrite:false"
+        wormhole-spin="speed:0.5"
+      ></a-sphere>
+      <a-entity light="type:point; color:#9966ff; intensity:2; distance:40"></a-entity>
+      <a-text value="WORMHOLE" position="0 8 0" align="center" color="#cc99ff" width="10" font="mozillavr"></a-text>
+      <a-text value="[CLICK TO ENTER]" position="0 6.5 0" align="center" color="#9966cc" width="6" font="mozillavr"></a-text>
+    </a-entity>
+
+    <!-- ── BLACK HOLE ─────────────────────────────────────────────── -->
+    <a-entity id="black-hole" position="-120 -20 -300" blackhole-effect="warningDist:50">
+      <!-- Accretion disk -->
+      <a-torus
+        radius="12" radius-tubular="4" arc="360" segments-tubular="120"
+        color="#ff6600"
+        material="transparent:true; opacity:0.7; emissive:#ff4400; emissive-intensity:0.5; blending:additive; depthWrite:false"
+        rotation="70 0 0"
+        self-rotate="speed:0.3"
+      ></a-torus>
+      <a-torus
+        radius="9" radius-tubular="2" arc="360" segments-tubular="80"
+        color="#ffaa00"
+        material="transparent:true; opacity:0.5; emissive:#ff8800; emissive-intensity:0.4; blending:additive; depthWrite:false"
+        rotation="70 10 0"
+        self-rotate="speed:0.5"
+      ></a-torus>
+      <!-- Event horizon -->
+      <a-sphere radius="7" color="#000000" material="emissive:#000000; emissive-intensity:1"></a-sphere>
+      <!-- Inner glow -->
+      <a-sphere radius="7.5" color="#ff4400"
+        material="transparent:true; opacity:0.1; blending:additive; depthWrite:false"
+      ></a-sphere>
+      <a-entity light="type:point; color:#ff6600; intensity:1.5; distance:80"></a-entity>
+      <a-text value="BLACK HOLE" position="0 16 0" align="center" color="#ff8844" width="12" font="mozillavr"></a-text>
+    </a-entity>
+
+    <!-- ── NEBULAE ──────────────────────────────────────────────────── -->
+    <!-- Nebula 1 — red giant remnant -->
+    <a-entity position="150 30 -250">
+      <a-sphere radius="45" color="#ff4488"
+        material="transparent:true; opacity:0.06; blending:additive; depthWrite:false; side:back"
+      ></a-sphere>
+      <a-sphere radius="38" color="#ff8844"
+        material="transparent:true; opacity:0.04; blending:additive; depthWrite:false; side:back"
+      ></a-sphere>
+      <a-sphere radius="30" color="#ffcc44"
+        material="transparent:true; opacity:0.03; blending:additive; depthWrite:false; side:back"
+      ></a-sphere>
+      <a-entity light="type:point; color:#ff4488; intensity:1; distance:100"></a-entity>
+    </a-entity>
+
+    <!-- Nebula 2 — blue-green -->
+    <a-entity position="-200 10 -280">
+      <a-sphere radius="55" color="#0088ff"
+        material="transparent:true; opacity:0.05; blending:additive; depthWrite:false; side:back"
+      ></a-sphere>
+      <a-sphere radius="42" color="#00ccff"
+        material="transparent:true; opacity:0.04; blending:additive; depthWrite:false; side:back"
+      ></a-sphere>
+      <a-sphere radius="32" color="#00ffaa"
+        material="transparent:true; opacity:0.035; blending:additive; depthWrite:false; side:back"
+      ></a-sphere>
+      <a-entity light="type:point; color:#0088ff; intensity:0.8; distance:120"></a-entity>
+    </a-entity>
+
+    <!-- Nebula 3 — purple eye -->
+    <a-entity position="30 -60 -350">
+      <a-sphere radius="60" color="#8833cc"
+        material="transparent:true; opacity:0.05; blending:additive; depthWrite:false; side:back"
+      ></a-sphere>
+      <a-sphere radius="48" color="#cc44ff"
+        material="transparent:true; opacity:0.04; blending:additive; depthWrite:false; side:back"
+      ></a-sphere>
+      <a-entity light="type:point; color:#aa44ff; intensity:0.7; distance:150"></a-entity>
+    </a-entity>
+
+    <!-- ── DISTANT GALAXIES ───────────────────────────────────────── -->
+    <a-entity position="300 50 -500">
+      <a-sphere radius="30" color="#ffc0a0"
+        material="transparent:true; opacity:0.06; blending:additive; depthWrite:false; side:back"
+      ></a-sphere>
+      <a-torus radius="20" radius-tubular="8" arc="360" segments-tubular="60"
+        color="#ff8855"
+        rotation="70 30 0"
+        material="transparent:true; opacity:0.07; blending:additive; depthWrite:false"
+        self-rotate="speed:0.01"
+      ></a-torus>
+    </a-entity>
+
+    <!-- ── ALIEN CIVILIZATION — DISTANT PLANET + TEMPLES ─────────── -->
+    <a-entity id="alien-world" position="-60 -5 -180">
+      <!-- Alien world -->
+      <a-sphere
+        id="alien-planet"
+        radius="4"
+        color="#336644"
+        class="scannable"
+        planet-scannable="planet:neptune"
+        self-rotate="speed:0.06"
+        atmosphere="color:#44ff88; opacity:0.2; scale:1.1"
+      >
+      </a-sphere>
+      <!-- Temple structures -->
+      <a-entity position="0 4.2 0">
+        <!-- Main pyramid -->
+        <a-cone height="1.5" radius-bottom="1" radius-top="0" color="#2a8844"
+          class="interactable"
+          artifact-scannable="story:A crystalline energy pyramid from the Zyx'ari civilization — active for 1.4 billion years."
+          position="0 0 0"
+          animation="property:rotation; to:0 360 0; dur:20000; loop:true; easing:linear"
+        ></a-cone>
+        <!-- Side obelisks -->
+        <a-box width="0.2" height="1" depth="0.2" color="#1a6633"
+          class="interactable"
+          artifact-scannable="story:Zyx'ari communication obelisk broadcasting encoded signals across 4,000 light years."
+          position="-1.2 0 0"
+        ></a-box>
+        <a-box width="0.2" height="0.8" depth="0.2" color="#1a6633"
+          class="interactable"
+          artifact-scannable="story:Harmonic resonance pillar — still vibrating at 432 Hz after millennia."
+          position="1.2 0 0"
+        ></a-box>
+        <!-- Energy crystal above pyramid -->
+        <a-box width="0.2" height="0.5" depth="0.2" color="#00ff88"
+          material="transparent:true; opacity:0.8; emissive:#00ff88; emissive-intensity:0.6; blending:additive"
+          position="0 1.5 0"
+          animation="property:position; from:0 1.5 0; to:0 1.8 0; dur:2000; loop:true; dir:alternate; easing:easeInOutSine"
+          class="collectible-obj"
+          collectible="type:crystal; amount:2"
+        ></a-box>
+        <a-entity light="type:point; color:#00ff88; intensity:1.5; distance:8; position:0 1.5 0"></a-entity>
+      </a-entity>
+      <a-text value="ALIEN WORLD" position="0 5.5 0" align="center" color="#44ff88" width="10" font="mozillavr"></a-text>
+    </a-entity>
+
+    <!-- ── COMETS ─────────────────────────────────────────────────── -->
+    <a-entity comet="speed:1.2; range:300" position="50 20 -80"></a-entity>
+    <a-entity comet="speed:0.9; range:250" position="-30 10 -120"></a-entity>
+    <a-entity comet="speed:1.5; range:350" position="100 -15 -60"></a-entity>
+
+    <!-- ── FLOATING COLLECTIBLE RESOURCES ──────────────────────────── -->
+    <!-- Minerals -->
+    <a-box width="0.3" height="0.3" depth="0.3" color="#aa8855"
+      class="collectible-obj"
+      collectible="type:mineral; amount:1"
+      position="10 2 -15"
+      animation="property:rotation; to:0 360 0; dur:4000; loop:true; easing:linear"
+    ></a-box>
+    <a-box width="0.25" height="0.25" depth="0.25" color="#cc9966"
+      class="collectible-obj"
+      collectible="type:mineral; amount:1"
+      position="-8 1 -20"
+      animation="property:rotation; to:0 360 0; dur:5000; loop:true; easing:linear"
+    ></a-box>
+    <!-- Crystals -->
+    <a-box width="0.2" height="0.4" depth="0.2" color="#00ffcc"
+      material="transparent:true; opacity:0.85; emissive:#00ffcc; emissive-intensity:0.5"
+      class="collectible-obj"
+      collectible="type:crystal; amount:1"
+      position="5 3 -12"
+      animation="property:rotation; to:0 360 0; dur:3000; loop:true; easing:linear"
+    ></a-box>
+    <!-- Dark matter canister -->
+    <a-cylinder radius="0.15" height="0.4" color="#220033"
+      material="emissive:#9900ff; emissive-intensity:0.4; transparent:true; opacity:0.9"
+      class="collectible-obj"
+      collectible="type:mineral; amount:3"
+      position="-12 4 -25"
+      animation="property:rotation; to:0 360 0; dur:6000; loop:true; easing:linear"
+    ></a-cylinder>
+
+    <!-- ── DAMAGED SATELLITE ─────────────────────────────────────── -->
+    <a-entity id="satellite" position="15 8 -30">
+      <!-- Body -->
+      <a-box width="0.6" height="0.4" depth="0.3" color="#556677"
+        class="interactable"
+        artifact-scannable="story:Communications satellite — damaged solar array. Repair required to restore signal to Earth."
+        animation="property:rotation; to:5 360 15; dur:8000; loop:true; easing:linear"
+      >
+        <!-- Solar panels (broken) -->
+        <a-box width="1.2" height="0.05" depth="0.4" color="#334455"
+          position="-0.9 0 0"
+          rotation="0 0 20"
+        ></a-box>
+        <a-box width="0.8" height="0.05" depth="0.4" color="#334455"
+          position="0.7 0 0"
+          rotation="0 0 -10"
+        ></a-box>
+        <!-- Antenna -->
+        <a-cylinder radius="0.02" height="0.5" color="#889988"
+          position="0 0.35 0"
+        ></a-cylinder>
+        <a-sphere radius="0.05" color="#00ffcc"
+          material="emissive:#00ffcc; emissive-intensity:0.8"
+          position="0 0.6 0"
+          animation="property:material.opacity; from:1; to:0.2; dur:800; loop:true; dir:alternate"
+        ></a-sphere>
+      </a-box>
+    </a-entity>
+
+    <!-- ── SPACE DEBRIS ───────────────────────────────────────────── -->
+    <a-box width="0.4" height="0.3" depth="0.2" color="#445566"
+      position="20 5 -40"
+      asteroid-drift="speed:0.005"
+    ></a-box>
+    <a-box width="0.25" height="0.2" depth="0.35" color="#556677"
+      position="-15 3 -35"
+      asteroid-drift="speed:0.007"
+    ></a-box>
+    <a-cylinder radius="0.15" height="0.5" color="#334455"
+      position="8 -2 -28"
+      asteroid-drift="speed:0.004"
+    ></a-cylinder>
+
+    <!-- ── PROCEDURAL STARS ─────────────────────────────────────── -->
+    <a-entity starfield="count:4000; radius:450"></a-entity>
+
+    <!-- ── SPACE DUST ──────────────────────────────────────────── -->
+    <a-entity space-dust="count:600"></a-entity>
+
+    <!-- ══════════════════════════════════════════════════════════
+         COCKPIT (stationary HUD mesh, visible only in headset)
+         ══════════════════════════════════════════════════════════ -->
+    <!-- The cockpit frame is visible in the scene but the HUD overlay
+         handles actual status. The 3D cockpit adds presence in VR. -->
+    <a-entity id="cockpit" position="0 0 0">
+
+      <!-- Instrument Panel bottom -->
+      <a-box
+        width="2.2" height="0.15" depth="0.7"
+        color="#0a1a2e"
+        position="0 -0.7 -1.1"
+        material="emissive:#001830; emissive-intensity:0.3"
+      ></a-box>
+
+      <!-- Dashboard glow strips -->
+      <a-box width="2" height="0.02" depth="0.01" color="#00d4ff"
+        material="emissive:#00d4ff; emissive-intensity:1; transparent:true; opacity:0.8; blending:additive"
+        position="0 -0.62 -0.78"
+      ></a-box>
+      <a-box width="2" height="0.02" depth="0.01" color="#0088ff"
+        material="emissive:#0088ff; emissive-intensity:0.8; transparent:true; opacity:0.6; blending:additive"
+        position="0 -0.66 -0.78"
+      ></a-box>
+
+      <!-- Holographic displays (glowing planes) -->
+      <a-plane width="0.4" height="0.25" color="#001428"
+        position="-0.7 -0.5 -1.1"
+        rotation="-30 0 0"
+        material="transparent:true; opacity:0.85; emissive:#003366; emissive-intensity:0.5"
+      ></a-plane>
+      <a-plane width="0.5" height="0.3" color="#001428"
+        position="0 -0.48 -1.15"
+        rotation="-30 0 0"
+        material="transparent:true; opacity:0.85; emissive:#003355; emissive-intensity:0.6"
+      ></a-plane>
+      <a-plane width="0.4" height="0.25" color="#001428"
+        position="0.7 -0.5 -1.1"
+        rotation="-30 0 0"
+        material="transparent:true; opacity:0.85; emissive:#003366; emissive-intensity:0.5"
+      ></a-plane>
+
+      <!-- Control column -->
+      <a-cylinder radius="0.04" height="0.3" color="#112233"
+        position="0 -0.55 -0.95"
+        rotation="20 0 0"
+        material="emissive:#002244; emissive-intensity:0.3"
+      ></a-cylinder>
+      <a-sphere radius="0.06" color="#0088ff"
+        position="0 -0.4 -0.92"
+        material="emissive:#00aaff; emissive-intensity:0.6"
+      ></a-sphere>
+
+      <!-- Left armrest -->
+      <a-box width="0.25" height="0.06" depth="0.5" color="#0a1a2e"
+        position="-0.75 -0.62 -0.9"
+        material="emissive:#001128; emissive-intensity:0.2"
+      ></a-box>
+
+      <!-- Right armrest -->
+      <a-box width="0.25" height="0.06" depth="0.5" color="#0a1a2e"
+        position="0.75 -0.62 -0.9"
+        material="emissive:#001128; emissive-intensity:0.2"
+      ></a-box>
+
+      <!-- Cockpit frame top -->
+      <a-entity position="0 0.6 -0.8">
+        <a-box width="2.5" height="0.05" depth="0.05" color="#0a1a2e"
+          material="emissive:#001830; emissive-intensity:0.2"
+        ></a-box>
+      </a-entity>
+
+      <!-- Left pillar -->
+      <a-box width="0.06" height="1.4" depth="0.06" color="#0a1a2e"
+        position="-1.15 0 -0.75"
+        material="emissive:#001830; emissive-intensity:0.2"
+      ></a-box>
+      <!-- Right pillar -->
+      <a-box width="0.06" height="1.4" depth="0.06" color="#0a1a2e"
+        position="1.15 0 -0.75"
+        material="emissive:#001830; emissive-intensity:0.2"
+      ></a-box>
+
+      <!-- LUMINA title display on dash -->
+      <a-text
+        value="LUMINA IMMERSIVE SPACE EXPLORATION"
+        position="0 -0.44 -1.14"
+        rotation="-30 0 0"
+        align="center"
+        color="#00d4ff"
+        width="1.8"
+        font="mozillavr"
+      ></a-text>
+
+      <!-- Thruster status lights -->
+      <a-sphere radius="0.025" color="#00ff88"
+        material="emissive:#00ff88; emissive-intensity:1"
+        position="-0.6 -0.62 -0.78"
+        animation="property:material.opacity; from:1; to:0.3; dur:1500; loop:true; dir:alternate"
+      ></a-sphere>
+      <a-sphere radius="0.025" color="#00ff88"
+        material="emissive:#00ff88; emissive-intensity:1"
+        position="-0.5 -0.62 -0.78"
+        animation="property:material.opacity; from:0.3; to:1; dur:1500; loop:true; dir:alternate"
+      ></a-sphere>
+      <a-sphere radius="0.025" color="#ffaa00"
+        material="emissive:#ffaa00; emissive-intensity:1"
+        position="-0.4 -0.62 -0.78"
+        animation="property:material.opacity; from:1; to:0.4; dur:900; loop:true; dir:alternate"
+      ></a-sphere>
+      <a-sphere radius="0.025" color="#00d4ff"
+        material="emissive:#00d4ff; emissive-intensity:1"
+        position="0.4 -0.62 -0.78"
+      ></a-sphere>
+      <a-sphere radius="0.025" color="#00d4ff"
+        material="emissive:#00d4ff; emissive-intensity:1"
+        position="0.5 -0.62 -0.78"
+      ></a-sphere>
+      <a-sphere radius="0.025" color="#ff4444"
+        material="emissive:#ff4444; emissive-intensity:1"
+        position="0.6 -0.62 -0.78"
+        animation="property:material.opacity; from:1; to:0; dur:600; loop:true; dir:alternate"
+      ></a-sphere>
+
+      <!-- Cockpit glow ambient -->
+      <a-entity light="type:point; color:#003366; intensity:0.8; distance:3" position="0 -0.3 -0.9"></a-entity>
+    </a-entity>
+
+    <!-- ── SKYBOX – Milky Way ─────────────────────────────────── -->
+    <a-sky src="#tex-sky" radius="900" rotation="0 -90 0" material="side:back"></a-sky>
+
+  </a-scene>
+
+  <!-- ─── LUMINA Scripts ──────────────────────────────────────────── -->
+  <script src="lumina.js"></script>
+
+  <!-- ─── Asteroid Belt Generator ───────────────────────────────── -->
+  <script>
+    /* Generate asteroid belt procedurally after DOM is ready */
+    document.addEventListener('DOMContentLoaded', () => {
+      const belt = document.getElementById('ast-gen');
+      if (!belt) return;
+      const beltCols = ['#8a8070', '#6a6560', '#7a7268', '#9a8880', '#5a5550'];
+      const innerR = 74, outerR = 86;
+      for (let i = 0; i < 45; i++) {
+        const r = innerR + Math.random() * (outerR - innerR);
+        const angle = Math.random() * Math.PI * 2;
+        const x = Math.cos(angle) * r;
+        const z = Math.sin(angle) * r;
+        const y = (Math.random() - 0.5) * 6;
+        const size = 0.15 + Math.random() * 0.6;
+        const col = beltCols[Math.floor(Math.random() * beltCols.length)];
+
+        const ast = document.createElement('a-box');
+        ast.setAttribute('width', size);
+        ast.setAttribute('height', size * 0.7);
+        ast.setAttribute('depth', size * 0.85);
+        ast.setAttribute('color', col);
+        ast.setAttribute('position', `${x} ${y} ${z}`);
+        ast.setAttribute('rotation', `${Math.random()*360} ${Math.random()*360} ${Math.random()*360}`);
+        ast.setAttribute('asteroid-drift', `speed:${0.002 + Math.random() * 0.008}`);
+        belt.appendChild(ast);
+      }
+
+      /* Generate loading screen background stars */
+      const starsContainer = document.getElementById('loading-stars-container');
+      if (starsContainer) {
+        for (let i = 0; i < 150; i++) {
+          const s = document.createElement('div');
+          s.className = 'loading-star';
+          s.style.setProperty('--duration', (2 + Math.random() * 5) + 's');
+          s.style.left = Math.random() * 100 + '%';
+          s.style.top = Math.random() * 100 + '%';
+          s.style.opacity = Math.random() * 0.8 + 0.1;
+          starsContainer.appendChild(s);
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>
